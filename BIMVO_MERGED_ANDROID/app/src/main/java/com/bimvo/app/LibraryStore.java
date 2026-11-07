@@ -151,7 +151,7 @@ final class LibraryStore extends SQLiteOpenHelper {
             ContentValues job = new ContentValues();
             job.put("total_parts",parts.size()); job.put("completed_parts",0);
             job.put("percent",60); job.put("stage","asr");
-            job.put("model_version","GigaAM-v3+ERes2NetV2-speaker-v1"); job.put("updated_at",System.currentTimeMillis());
+            job.put("model_version",BilingualAsr.MODEL_VERSION); job.put("updated_at",System.currentTimeMillis());
             db.update("processing_jobs",job,"recording_id=?",new String[]{id});
             db.setTransactionSuccessful();
         } finally { db.endTransaction(); }

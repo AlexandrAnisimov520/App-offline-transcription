@@ -44,21 +44,7 @@ final class GigaAmE2eCtc implements AutoCloseable {
     }
 
     String transcribe(RandomAccessFile audio, ChunkPlanner.Chunk chunk) throws Exception {
-        long samples = chunk.end - chunk.start;
-        if (samples < 320 || samples > ChunkPlanner.LIMIT)
-            throw new IllegalArgumentException("Invalid ASR chunk size");
-        float[] signal = new float[(int) samples];
-        audio.seek(chunk.start * 2);
-        byte[] read = new byte[Math.min(65536, (int) samples * 2)];
-        for (int pos = 0; pos < signal.length;) {
-            int count = Math.min(signal.length - pos, read.length / 2);
-            audio.readFully(read, 0, count * 2);
-            for (int j = 0; j < count; j++) {
-                int at = j * 2;
-                signal[pos + j] = (short) ((read[at] & 255) | (read[at + 1] << 8)) / 32768f;
-            }
-            pos += count;
-        }
+        float[] signal = AudioDecoder.readPcm(audio, chunk.start, chunk.end);
         float[][] features = GigaamFeatures.extract(signal);
         int frames = features[0].length;
         try (OnnxTensor tensor = OnnxTensor.createTensor(env, new float[][][]{features});

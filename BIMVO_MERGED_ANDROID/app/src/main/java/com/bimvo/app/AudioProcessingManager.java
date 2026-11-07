@@ -3,7 +3,6 @@ package com.bimvo.app;
 import android.util.Log;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.RandomAccessFile;
@@ -81,25 +80,31 @@ final class AudioProcessingManager {
             if (totalSamples < 320) throw new IOException("Слишком короткая аудиозапись");
             List<ChunkPlanner.Chunk> parts = store.chunks(id);
             if (!parts.isEmpty() && (parts.get(parts.size()-1).end > totalSamples ||
-                    !SpeakerDiarization.VERSION.equals(parts.get(0).reason))) parts = Collections.emptyList();
+                    parts.stream().anyMatch(chunk -> !BilingualAsr.hasLanguage(chunk)))) parts = Collections.emptyList();
             if (parts.isEmpty()) {
                 parts = SpeakerDiarization.plan(application, pcm, cancelled::get, (stage, percent) -> report(id, stage, percent));
+                report(id, "language", 56);
+                try (RandomAccessFile audio = new RandomAccessFile(pcm, "r")) {
+                    parts = BilingualAsr.assignLanguages(application, audio, parts, cancelled::get);
+                }
                 checkCancel();
                 store.setChunkPlan(id, parts);
             }
             report(id,"asr", Math.max(60, store.job(id).percent));
             Set<Integer> done = store.completedChunks(id);
             if (done.size() != parts.size()) {
-                // Close the VAD session before allocating the 225 MB ASR model.
-                try (RandomAccessFile audio = new RandomAccessFile(pcm,"r");
-                     GigaAmE2eCtc asr = new GigaAmE2eCtc(application)) {
-                    for (ChunkPlanner.Chunk chunk : parts) {
-                        if (done.contains(chunk.index)) continue;
+                try (RandomAccessFile audio = new RandomAccessFile(pcm, "r")) {
+                    if (parts.stream().anyMatch(chunk -> !done.contains(chunk.index) && !BilingualAsr.isEnglish(chunk))) {
                         checkCancel();
-                        String text = asr.transcribe(audio,chunk);
+                        try (GigaAmE2eCtc russian = new GigaAmE2eCtc(application)) {
+                            transcribe(id, audio, parts, done, false, russian::transcribe);
+                        }
+                    }
+                    if (parts.stream().anyMatch(chunk -> !done.contains(chunk.index) && BilingualAsr.isEnglish(chunk))) {
                         checkCancel();
-                        store.finishChunk(id, chunk, text);
-                        application.reportProcessing(id, store.job(id), true);
+                        try (BilingualAsr english = new BilingualAsr(application)) {
+                            transcribe(id, audio, parts, done, true, english::transcribe);
+                        }
                     }
                 }
             }
@@ -117,6 +122,23 @@ final class AudioProcessingManager {
             String message = error.getMessage() == null ? "Ошибка локального распознавания" : error.getMessage();
             store.updateJob(id,"failed","failed",previous == null ? 0 : previous.percent,message);
             application.reportProcessing(id,store.job(id),true);
+        }
+    }
+
+    @FunctionalInterface
+    private interface Recognizer {
+        String transcribe(RandomAccessFile audio, ChunkPlanner.Chunk chunk) throws Exception;
+    }
+
+    private void transcribe(String id, RandomAccessFile audio, List<ChunkPlanner.Chunk> parts,
+            Set<Integer> done, boolean english, Recognizer recognizer) throws Exception {
+        for (ChunkPlanner.Chunk chunk : parts) {
+            if (done.contains(chunk.index) || BilingualAsr.isEnglish(chunk) != english) continue;
+            checkCancel();
+            String text = recognizer.transcribe(audio, chunk);
+            checkCancel();
+            store.finishChunk(id, chunk, text);
+            application.reportProcessing(id, store.job(id), true);
         }
     }
 

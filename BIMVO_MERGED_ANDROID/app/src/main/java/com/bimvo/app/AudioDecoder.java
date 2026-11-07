@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.function.BooleanSupplier;
@@ -245,6 +246,25 @@ final class AudioDecoder {
     }
 
     private static int u16(byte[] b, int p) { return (b[p] & 255) | ((b[p + 1] & 255) << 8); }
+    static float[] readPcm(RandomAccessFile audio, long start, long end) throws IOException {
+        long samples = end - start;
+        if (start < 0 || samples < ChunkPlanner.MIN_CHUNK || samples > ChunkPlanner.LIMIT)
+            throw new IllegalArgumentException("Invalid ASR chunk size");
+        float[] signal = new float[(int) samples];
+        audio.seek(start * 2);
+        byte[] read = new byte[Math.min(65536, (int) samples * 2)];
+        for (int pos = 0; pos < signal.length;) {
+            int count = Math.min(signal.length - pos, read.length / 2);
+            audio.readFully(read, 0, count * 2);
+            for (int j = 0; j < count; j++) {
+                int at = j * 2;
+                signal[pos + j] = (short) ((read[at] & 255) | (read[at + 1] << 8)) / 32768f;
+            }
+            pos += count;
+        }
+        return signal;
+    }
+
     private static int readFully(InputStream in, byte[] b, int wanted) throws IOException {
         int total = 0;
         while (total < wanted) {

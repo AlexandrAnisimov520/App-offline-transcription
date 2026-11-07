@@ -79,3 +79,37 @@ python qa/run_core_tests.py
 ```
 
 После успешной сборки APK появится в `app/build/outputs/apk/debug/app-debug.apk`. Список ручных прогонов для устройства: `qa/MANUAL_TESTS.md`.
+
+## Офлайн-распознавание RU/EN
+
+После диаризации Whisper Tiny определяет язык каждого речевого фрагмента.
+GigaAM v3 обрабатывает русский, Parakeet TDT 0.6B v2 int8 — английский.
+Фрагменты короче 0,5 секунды и неподдерживаемые метки используют ближайший
+определённый язык того же говорящего в пределах 10 секунд, иначе русский.
+Для смены языка внутри одного фрагмента нужна отдельная сегментация.
+Метки языка сохраняются в плане, а JSON сохраняет существующий контракт.
+
+Перед сборкой разместите модель ERes2NetV2 из checkpoint в
+app/src/main/assets/models. Остальные веса и статически слинкованный
+Sherpa-ONNX Gradle скачивает и сверяет при первой сборке. Модель Parakeet
+добавляет около 661 МБ, Whisper — около 103 МБ. Обработка выполняется офлайн.
+
+Если при упаковке Qwen и Parakeet в один APK Gradle сообщает
+`Java heap space`, запустите сборку с одним worker и увеличенным heap:
+
+```powershell
+.\gradlew.bat '-Dorg.gradle.jvmargs=-Xmx3584m -Dfile.encoding=UTF-8' :app:assembleDebug --max-workers=1
+```
+
+
+Parakeet TDT 0.6B v2, NVIDIA, CC BY 4.0:
+https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2
+https://creativecommons.org/licenses/by/4.0/
+Конвертация: https://huggingface.co/csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8
+
+Whisper Tiny, OpenAI, MIT:
+https://github.com/openai/whisper/blob/main/LICENSE
+Конвертация: https://huggingface.co/csukuangfj/sherpa-onnx-whisper-tiny
+
+Sherpa-ONNX, Apache 2.0:
+https://github.com/k2-fsa/sherpa-onnx/blob/v2.0.1/LICENSE

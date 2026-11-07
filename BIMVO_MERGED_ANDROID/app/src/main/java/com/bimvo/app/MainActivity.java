@@ -1249,6 +1249,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
             case "decode", "prepare" -> "Подготовка PCM 16 кГц";
             case "vad" -> "Определение пауз · Silero";
             case "speakers", "clustering" -> "Определение говорящих";
+            case "language" -> "Определение языка";
             case "asr" -> "Распознавание речи · GigaAM";
             case "done" -> "Готово";
             default -> "Ожидание или восстановление";
