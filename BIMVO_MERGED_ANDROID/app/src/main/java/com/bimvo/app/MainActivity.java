@@ -500,27 +500,6 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
     private LinearLayout content(boolean bottomBar) {
         LinearLayout scaffold = vertical();
         root.addView(scaffold, new FrameLayout.LayoutParams(-1,-1));
-        if (model != null && model.voiceRecorder.isRecording()) {
-            LinearLayout recording = horizontal();
-            recording.setPadding(dp(18), dp(8), dp(12), dp(8));
-            recording.setBackground(shape(BimvoStyle.CARD, BimvoStyle.TEAL, 0));
-            LinearLayout labels = vertical();
-            recordingStatus = text("", 14, BimvoStyle.TEAL, true);
-            recordingStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_NONE);
-            labels.addView(recordingStatus);
-            microphoneLevel = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-            microphoneLevel.setMax(100);
-            microphoneLevel.setProgressTintList(ColorStateList.valueOf(BimvoStyle.TEAL));
-            microphoneLevel.setContentDescription("Уровень звука микрофона");
-            labels.addView(microphoneLevel, lp(-1, 6));
-            recording.addView(labels, new LinearLayout.LayoutParams(0, -2, 1f));
-            TextView stop = text("Остановить", 13, BimvoStyle.WHITE, true);
-            stop.setGravity(Gravity.CENTER);
-            stop.setOnClickListener(v -> toggleVoiceRecording());
-            recording.addView(stop, lp(110, 48));
-            scaffold.addView(recording, lp(-1, -2));
-            updateRecordingStatus();
-        }
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
         scroll.setVerticalScrollBarEnabled(false);
@@ -557,6 +536,12 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         row.addView(prism, lp(22, 27));
         TextView brand = text("BIMVO", 15, BimvoStyle.WHITE, true);
         LinearLayout.LayoutParams brandLp = lp(-2, 32);
+        if (model != null && model.voiceRecorder.isRecording() && page != Page.HOME) {
+            brand.setText("BIMVO · ● запись");
+            brand.setTextColor(BimvoStyle.TEAL);
+            brand.setContentDescription("Вернуться к записи");
+            brand.setOnClickListener(v -> bottomTab(Page.HOME));
+        }
         brandLp.leftMargin = dp(8);
         row.addView(brand, brandLp);
         withMargin(body, row, -1, 36, 0, 0);
@@ -795,18 +780,32 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         column.addView(text(s(R.string.home_import), 19, BimvoStyle.WHITE, false));
         uploadCard.addView(glyph(GlyphView.Icon.ARROW, BimvoStyle.WHITE, 19), lp(19,19));
         withMargin(body, uploadCard, -1, -2, 0, 10);
-        LinearLayout record = horizontal();
-        record.setPadding(dp(15), 0, dp(14), 0);
-        clickable(record, BimvoStyle.BG, BimvoStyle.BORDER, 8, this::toggleVoiceRecording);
-        record.addView(glyph(GlyphView.Icon.MIC, BimvoStyle.MUTED, 21), lp(21,21));
-        TextView startRecord = text(model.voiceRecorder.isRecording()
-                ? "■ Остановить запись"
-                : s(R.string.home_record), 16, BimvoStyle.WHITE, false);
-        LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(0, -1, 1f);
-        titleLp.leftMargin = dp(16);
-        record.addView(startRecord, titleLp);
-        record.addView(glyph(GlyphView.Icon.ARROW, BimvoStyle.MUTED, 19), lp(19,19));
-        withMargin(body, record, -1, 49, 0, 0);
+        if (model.voiceRecorder.isRecording()) {
+            LinearLayout recording = card(16, 14);
+            recording.setBackground(shape(BimvoStyle.CARD, BimvoStyle.TEAL, 12));
+            recordingStatus = text("", 17, BimvoStyle.TEAL, true);
+            recording.addView(recordingStatus, lp(-1, 32));
+            withMargin(recording, text("Микрофон включён", 12, BimvoStyle.MUTED, false), -1, -2, 2, 12);
+            microphoneLevel = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+            microphoneLevel.setMax(100);
+            microphoneLevel.setProgressTintList(ColorStateList.valueOf(BimvoStyle.TEAL));
+            microphoneLevel.setContentDescription("Уровень микрофона");
+            recording.addView(microphoneLevel, lp(-1, 8));
+            withMargin(recording, primaryButton("Остановить запись", this::toggleVoiceRecording), -1, 52, 18, 0);
+            withMargin(body, recording, -1, -2, 0, 0);
+            updateRecordingStatus();
+        } else {
+            LinearLayout record = horizontal();
+            record.setPadding(dp(15), 0, dp(14), 0);
+            clickable(record, BimvoStyle.BG, BimvoStyle.BORDER, 8, this::toggleVoiceRecording);
+            record.addView(glyph(GlyphView.Icon.MIC, BimvoStyle.MUTED, 21), lp(21,21));
+            TextView startRecord = text(s(R.string.home_record), 16, BimvoStyle.WHITE, false);
+            LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(0, -1, 1f);
+            titleLp.leftMargin = dp(16);
+            record.addView(startRecord, titleLp);
+            record.addView(glyph(GlyphView.Icon.ARROW, BimvoStyle.MUTED, 19), lp(19,19));
+            withMargin(body, record, -1, 56, 0, 0);
+        }
         spacer(body, 23);
         LinearLayout recentHeading = horizontal();
         recentHeading.addView(section(s(R.string.home_recent)), new LinearLayout.LayoutParams(0, -1, 1f));
@@ -1073,8 +1072,8 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         LibraryStore.Job job = model.processingJob(r.id);
         boolean active = job != null && job.active();
         boolean failed = job != null && ("failed".equals(job.status) || "paused".equals(job.status) || "interrupted".equals(job.status));
-        String status = job != null && "complete".equals(job.status) ? "Расшифровано · 100%"
-                : active ? "Распознавание · " + job.percent + "%"
+        String status = job != null && "complete".equals(job.status) ? "Готово · 100%"
+                : active ? ("speakers".equals(job.stage) || "clustering".equals(job.stage) ? "Определение говорящих · " : "vad".equals(job.stage) ? "Поиск речи · " : "Распознавание · ") + job.percent + "%"
                 : failed ? "Обработка приостановлена · " + job.percent + "%"
                 : !r.transcript.isEmpty() ? "Расшифровка готова" : "Подготовка · 0%";
         withMargin(body, text(status, 13, BimvoStyle.TEAL, true), -1, -2, 0, 12);
@@ -1096,11 +1095,16 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
     private void recordingActions(Recording r) {
         if (r.demo) { openRecording(r); return; }
         new AlertDialog.Builder(this).setTitle(r.title)
-                .setItems(new String[]{"Открыть", "Сведения о записи", "Переименовать", "Удалить"}, (d, which) -> {
+                .setItems(new String[]{"Открыть", "Сведения о записи", "Переименовать", "Удалить", "Обработать с диаризацией"}, (d, which) -> {
                     if (which == 0) openRecording(r);
                     else if (which == 1) { currentRecordId = r.id; audioPosition = 0; stopPlayback(); forward(Page.DETAILS); }
                     else if (which == 2) renameRecording(r);
-                    else confirmDelete(r);
+                    else if (which == 3) confirmDelete(r);
+                    else new AlertDialog.Builder(this).setTitle("Обработать с диаризацией?")
+                            .setMessage("Аудио будет обработано заново. Текущая расшифровка сохранится до успешного завершения. Сохранённый конспект не пересоздаётся.")
+                            .setPositiveButton("Обработать", (choice, button) -> {
+                                if (!model.reprocessWithSpeakers(r.id)) toast(R.string.operation_busy);
+                            }).setNegativeButton(R.string.cancel, null).show();
                 }).setNegativeButton(R.string.cancel, null).show();
     }
 
@@ -1244,6 +1248,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         String stage = job == null ? "Ожидание" : switch (job.stage) {
             case "decode", "prepare" -> "Подготовка PCM 16 кГц";
             case "vad" -> "Определение пауз · Silero";
+            case "speakers", "clustering" -> "Определение говорящих";
             case "asr" -> "Распознавание речи · GigaAM";
             case "done" -> "Готово";
             default -> "Ожидание или восстановление";
@@ -1262,7 +1267,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
             }),-1,48,0,9);
         if (!r.transcript.isEmpty())
             addPrimary(body,"Открыть расшифровку",() -> forward(Page.TRANSCRIPT),8);
-        withMargin(body,caption("Аудио и распознавание остаются на этом устройстве. Говорящие определяются на следующем этапе."),-1,-2,16,0);
+        withMargin(body,caption("Аудио, распознавание и определение говорящих остаются на устройстве."),-1,-2,16,0);
     }
 
     private void updateProcessingLabels() {
@@ -1296,7 +1301,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
 
 
     private String speakerLabel(String id) {
-        if ("speaker_unknown".equals(id)) return "Речь";
+        if ("speaker_unknown".equals(id)) return "Говорящий не определён";
         return getString(R.string.speaker_label, id.startsWith("speaker_") ? id.substring(8) : id);
     }
 
@@ -1310,7 +1315,10 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
                     TranscriptText.clock(record.transcriptDurationMs()), record.speakers().size()),
                     12,BimvoStyle.MUTED,false),-1,-2,0,0);
         } else {
-            withMargin(body,text(TranscriptText.clock(record.durationMs > 0 ? record.durationMs : record.transcriptDurationMs()),
+            int speakers = 0;
+            for (String id : record.speakers()) if (!"speaker_unknown".equals(id)) speakers++;
+            String duration = TranscriptText.clock(record.durationMs > 0 ? record.durationMs : record.transcriptDurationMs());
+            withMargin(body,text(duration + (speakers == 0 ? " · Говорящие не определены" : " · Говорящих: " + speakers),
                     12,BimvoStyle.MUTED,false),-1,-2,0,8);
             addProcessingStatus(body, record);
         }
@@ -1499,7 +1507,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         TextView timing = text(TranscriptText.preciseClock(turn.startMs) + " \u2014 "
                 + TranscriptText.preciseClock(turn.endMs),11,BimvoStyle.MUTED,false);
         withMargin(copy,timing,-1,-2,6,0);
-        TextView sentence = text(turn.text,13,BimvoStyle.WHITE,false);
+        TextView sentence = text(turn.hasRecognizedText() ? turn.text : "Речь не распознана",13,BimvoStyle.WHITE,false);
         sentence.setLineSpacing(dp(4),1f);
         withMargin(copy,sentence,-1,-2,9,0);
         LinearLayout footer = horizontal();
@@ -1604,7 +1612,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         withMargin(words,text(TranscriptText.preciseClock(turn.startMs) + " \u2014 "
                 + TranscriptText.preciseClock(turn.endMs),12,BimvoStyle.MUTED,false),-1,-2,6,0);
         withMargin(intervalContainer,header,-1,-2,0,12);
-        TextView snippet = text(turn.text,12,BimvoStyle.MUTED,false);
+        TextView snippet = text(turn.hasRecognizedText() ? turn.text : "Речь не распознана",12,BimvoStyle.MUTED,false);
         snippet.setMaxLines(3);
         snippet.setEllipsize(android.text.TextUtils.TruncateAt.END);
         withMargin(intervalContainer,snippet,-1,-2,0,12);

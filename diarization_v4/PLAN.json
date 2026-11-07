@@ -1,0 +1,16 @@
+{
+  "calibration": "ES2002b first 300 seconds",
+  "thresholds": [
+    0.85,
+    0.95,
+    1.05,
+    1.15
+  ],
+  "selection": "lowest segment DER, ties prefer lower threshold",
+  "validation": [
+    "ES2002a full",
+    "TS3004a first 300 seconds"
+  ],
+  "speaker_count": "automatic, never supplied",
+  "limitation": "same corpus; ES2002a and ES2002b share meeting participants; validation is not unseen-domain testing"
+}

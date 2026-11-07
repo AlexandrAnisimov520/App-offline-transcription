@@ -1,0 +1,53 @@
+{
+  "plan": {
+    "thresholds": [
+      0.35,
+      0.45,
+      0.55,
+      0.65,
+      0.75
+    ],
+    "calibration": "ES2002b first900s",
+    "selection": "minimum segment DER; ties prefer fewer merges",
+    "validation": [
+      "ES2002a full",
+      "TS3004a first300s"
+    ],
+    "no_oracle_count": true,
+    "method": "exclusive-speech group prototypes, duration-weighted centroid merging, overlap cannot-link >=.1s",
+    "model": "same ERes2Net VoxCeleb; no training; prototypes cap20s per group",
+    "limitations": "AMI only; ES2002a/b share participants; short calibration; validation recordings previously inspected"
+  },
+  "results": [
+    {
+      "threshold": 0.35,
+      "der": 0.22884029795994196,
+      "speakers": 15
+    },
+    {
+      "threshold": 0.45,
+      "der": 0.23039590392700027,
+      "speakers": 18
+    },
+    {
+      "threshold": 0.55,
+      "der": 0.23039590392700027,
+      "speakers": 18
+    },
+    {
+      "threshold": 0.65,
+      "der": 0.23211314268090313,
+      "speakers": 19
+    },
+    {
+      "threshold": 0.75,
+      "der": 0.26236674889017814,
+      "speakers": 20
+    }
+  ],
+  "selected": {
+    "threshold": 0.35,
+    "der": 0.22884029795994196,
+    "speakers": 15
+  }
+}

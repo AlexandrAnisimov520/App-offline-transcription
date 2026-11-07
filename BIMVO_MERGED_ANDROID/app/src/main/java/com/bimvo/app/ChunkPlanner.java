@@ -14,9 +14,12 @@ final class ChunkPlanner {
     static final class Chunk {
         final int index;
         final long start, end;
-        final String reason;
+        final String reason, speakerId;
         Chunk(int index, long start, long end, String reason) {
-            this.index = index; this.start = start; this.end = end; this.reason = reason;
+            this(index, start, end, reason, "speaker_unknown");
+        }
+        Chunk(int index, long start, long end, String reason, String speakerId) {
+            this.index = index; this.start = start; this.end = end; this.reason = reason; this.speakerId = speakerId;
         }
     }
 

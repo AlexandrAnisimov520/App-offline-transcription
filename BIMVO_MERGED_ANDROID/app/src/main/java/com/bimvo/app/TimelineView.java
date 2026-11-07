@@ -17,6 +17,7 @@ public final class TimelineView extends View {
     private final float density, scaledDensity;
     private List<Utterance> turns=new ArrayList<>();
     private List<String> speakers=new ArrayList<>();
+    private List<SpeakerTimelineIntervals.Span> spans=new ArrayList<>();
     private long duration=60_000;
     private int selected;
     private OnIntervalSelected listener;
@@ -37,10 +38,13 @@ public final class TimelineView extends View {
         return Math.min(width,getWidth()*.55f);
     }
     private String label(String id) {
+        if ("speaker_unknown".equals(id)) return "Не определён";
         return getContext().getString(R.string.speaker_label,id.startsWith("speaker_") ? id.substring(8) : id);
     }
     public void setData(List<Utterance> data,int selectedTurn,long timelineDurationMs) {
         turns=new ArrayList<>(data);
+        turns.sort(java.util.Comparator.comparingLong((Utterance u)->u.startMs).thenComparingLong(u->u.endMs));
+        spans=SpeakerTimelineIntervals.group(turns);
         LinkedHashSet<String> ids=new LinkedHashSet<>();
         duration=Math.max(1_000,timelineDurationMs);
         for (Utterance u:turns) { ids.add(u.speakerId); duration=Math.max(duration,u.endMs); }
@@ -76,20 +80,23 @@ public final class TimelineView extends View {
             paint.setColor(BimvoStyle.WHITE);
             paint.setTextSize(10*scaledDensity);
             canvas.drawText(label(id),dp(2),center+dp(3),paint);
-            for (Utterance u:turns) if (u.speakerId.equals(id)) {
-                float begin=left+chart*u.startMs/duration;
-                float end=left+chart*u.endMs/duration;
-                paint.setColor(BimvoStyle.speakerColor(u.speakerId));
-                paint.setAlpha(u.id==selected ? 255 : 170);
-                RectF rect=new RectF(begin,center-dp(6),Math.max(begin+dp(3),end),center+dp(6));
-                canvas.drawRoundRect(rect,dp(2),dp(2),paint);
-                if (u.id==selected) {
-                    paint.setStyle(Paint.Style.STROKE);
-                    paint.setStrokeWidth(dp(1.3f));
-                    paint.setColor(BimvoStyle.WHITE);
-                    canvas.drawRoundRect(rect,dp(2),dp(2),paint);
-                    paint.setStyle(Paint.Style.FILL);
-                }
+            // One continuous bar for touching chunks of the same voice; real pauses remain visible.
+            for (SpeakerTimelineIntervals.Span span:spans) if (span.speaker.equals(id)) {
+                float begin=left+chart*span.start/duration;
+                float end=left+chart*span.end/duration;
+                paint.setColor(BimvoStyle.speakerColor(id));
+                paint.setAlpha(220);
+                canvas.drawRoundRect(new RectF(begin,center-dp(7),Math.max(begin+dp(2),end),center+dp(7)),dp(4),dp(4),paint);
+            }
+            paint.setAlpha(255);
+            // Highlight only the selected original turn; grouping never changes click targets.
+            for (Utterance u:turns) if (u.id==selected && u.speakerId.equals(id)) {
+                float begin=left+chart*u.startMs/duration, end=left+chart*u.endMs/duration;
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setStrokeWidth(dp(1.3f));
+                paint.setColor(BimvoStyle.WHITE);
+                canvas.drawRoundRect(new RectF(begin,center-dp(9),Math.max(begin+dp(3),end),center+dp(9)),dp(4),dp(4),paint);
+                paint.setStyle(Paint.Style.FILL);
             }
             paint.setAlpha(255);
         }

@@ -30,7 +30,8 @@ with tempfile.TemporaryDirectory(prefix='bimvo-qa-') as temp:
 source=(SRC/'LibraryStore.java').read_text(encoding='utf-8')
 blocks=re.findall(r'db\.execSQL\((.*?)\);',source,re.S)
 schema=[''.join(json.loads(literal) for literal in re.findall(r'"(?:[^"\\]|\\.)*"',block)) for block in blocks]
-assert len(schema)==3
+schema=[statement for statement in schema if statement.startswith('CREATE ')]
+assert len(schema)==5  # Four current tables plus the recordings date index; ALTER is migration-only.
 connection=sqlite3.connect(':memory:')
 connection.execute('PRAGMA foreign_keys=ON')
 for statement in schema: connection.execute(statement)

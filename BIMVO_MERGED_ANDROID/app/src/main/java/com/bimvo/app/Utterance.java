@@ -4,6 +4,7 @@ import java.util.Objects;
 
 /** One real or explicitly labelled demo turn. All times are milliseconds. */
 public final class Utterance {
+    public static final String UNRECOGNIZED_TEXT = "[Речь не распознана]";
     public final int id;
     public final String speakerId;
     public final long startMs, endMs;
@@ -23,6 +24,8 @@ public final class Utterance {
     public Utterance withText(String value) {
         return new Utterance(id, speakerId, startMs, endMs, value);
     }
+
+    public boolean hasRecognizedText() { return !UNRECOGNIZED_TEXT.equals(text); }
 
     public Utterance withTiming(String speaker, long start, long end) {
         return new Utterance(id, speaker, start, end, text);

@@ -1,0 +1,134 @@
+[
+  {
+    "meeting": "ES2002a",
+    "threshold": 0.35,
+    "baseline": {
+      "der": 0.45256019236464035,
+      "miss_seconds": 170.81876348876898,
+      "false_alarm_seconds": 70.63394004380791,
+      "confusion_seconds": 219.45858206176752,
+      "reference_speaker_seconds": 1018.4529999999986,
+      "reference_speakers": 4,
+      "predicted_speakers": 45,
+      "dominant_turns": 221,
+      "reference_turns": 265,
+      "merge_pairs": 2903,
+      "predicted_same_pairs": 4907,
+      "split_pairs": 7103,
+      "reference_same_pairs": 9107,
+      "short_correct": 10,
+      "short_total": 114,
+      "return_correct": 2,
+      "return_total": 19,
+      "mapping": {
+        "speaker_20": "AMI_A",
+        "speaker_7": "AMI_B",
+        "speaker_21": "AMI_C",
+        "speaker_1": "AMI_D"
+      }
+    },
+    "refined": {
+      "der": 0.429368595270084,
+      "miss_seconds": 170.82574737548777,
+      "false_alarm_seconds": 70.59032578599545,
+      "confusion_seconds": 195.87566079711905,
+      "reference_speaker_seconds": 1018.4529999999986,
+      "reference_speakers": 4,
+      "predicted_speakers": 29,
+      "dominant_turns": 221,
+      "reference_turns": 265,
+      "merge_pairs": 3569,
+      "predicted_same_pairs": 6042,
+      "split_pairs": 6634,
+      "reference_same_pairs": 9107,
+      "short_correct": 12,
+      "short_total": 114,
+      "return_correct": 2,
+      "return_total": 19,
+      "mapping": {
+        "speaker_2": "AMI_A",
+        "speaker_6": "AMI_B",
+        "speaker_9": "AMI_C",
+        "speaker_1": "AMI_D"
+      }
+    },
+    "diagnostics": {
+      "jer": 0.43361585545079095,
+      "vad_precision": 0.931309524322652,
+      "vad_recall": 0.9218116274806758,
+      "vad_f1": 0.9265362358728608,
+      "reference_speech_union_seconds": 860.9659999999991,
+      "hypothesis_speech_union_seconds": 852.1854968065024,
+      "reference_overlap_seconds": 143.3329999999999,
+      "overlap_precision": 0.8180906227188449,
+      "overlap_recall": 0.37659703598601996,
+      "note": "JER averages reference-speaker IoU error after optimal assignment; inspect with DER because unmatched extra hypothesis speakers are not separately penalized. VAD metrics use binary speech union; overlap requires >=2 concurrent speaker labels."
+    }
+  },
+  {
+    "meeting": "TS3004a",
+    "threshold": 0.35,
+    "baseline": {
+      "der": 0.3279218371882583,
+      "miss_seconds": 36.98346072387693,
+      "false_alarm_seconds": 3.1910761489867614,
+      "confusion_seconds": 34.582788116455134,
+      "reference_speaker_seconds": 227.97300000000004,
+      "reference_speakers": 4,
+      "predicted_speakers": 16,
+      "dominant_turns": 54,
+      "reference_turns": 64,
+      "merge_pairs": 141,
+      "predicted_same_pairs": 248,
+      "split_pairs": 275,
+      "reference_same_pairs": 382,
+      "short_correct": 2,
+      "short_total": 28,
+      "return_correct": 1,
+      "return_total": 3,
+      "mapping": {
+        "speaker_3": "AMI_A",
+        "speaker_10": "AMI_B",
+        "speaker_8": "AMI_C",
+        "speaker_12": "AMI_D"
+      }
+    },
+    "refined": {
+      "der": 0.3059887662555763,
+      "miss_seconds": 36.98346072387693,
+      "false_alarm_seconds": 3.1404474868773864,
+      "confusion_seconds": 29.633268798828198,
+      "reference_speaker_seconds": 227.97300000000004,
+      "reference_speakers": 4,
+      "predicted_speakers": 12,
+      "dominant_turns": 54,
+      "reference_turns": 64,
+      "merge_pairs": 180,
+      "predicted_same_pairs": 300,
+      "split_pairs": 262,
+      "reference_same_pairs": 382,
+      "short_correct": 2,
+      "short_total": 28,
+      "return_correct": 1,
+      "return_total": 3,
+      "mapping": {
+        "speaker_7": "AMI_A",
+        "speaker_2": "AMI_B",
+        "speaker_11": "AMI_C",
+        "speaker_3": "AMI_D"
+      }
+    },
+    "diagnostics": {
+      "jer": 0.5908451600441391,
+      "vad_precision": 0.9899394937105875,
+      "vad_recall": 0.8952468168013991,
+      "vad_f1": 0.9402149544887194,
+      "reference_speech_union_seconds": 201.751,
+      "hypothesis_speech_union_seconds": 182.45250511169434,
+      "reference_overlap_seconds": 24.253000000000007,
+      "overlap_precision": 0.8960237035904446,
+      "overlap_recall": 0.42768312124784685,
+      "note": "JER averages reference-speaker IoU error after optimal assignment; inspect with DER because unmatched extra hypothesis speakers are not separately penalized. VAD metrics use binary speech union; overlap requires >=2 concurrent speaker labels."
+    }
+  }
+]

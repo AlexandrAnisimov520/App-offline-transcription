@@ -18,7 +18,7 @@ final class LibraryStore extends SQLiteOpenHelper {
     final File audioDirectory;
 
     LibraryStore(Context context) {
-        super(context, "bimvo-library.db", null, 2);
+        super(context, "bimvo-library.db", null, 3);
         this.context = context.getApplicationContext();
         audioDirectory = new File(context.getFilesDir(), "audio");
         setWriteAheadLoggingEnabled(true);
@@ -51,8 +51,9 @@ final class LibraryStore extends SQLiteOpenHelper {
     }
 
     @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if (oldVersion == 1 && newVersion == 2) { createProcessingTables(db); return; }
-        throw new IllegalStateException("Missing library migration " + oldVersion + " -> " + newVersion);
+        if (oldVersion < 2) createProcessingTables(db);
+        else if (oldVersion < 3) db.execSQL("ALTER TABLE audio_chunks ADD COLUMN speaker_id TEXT NOT NULL DEFAULT 'speaker_unknown'");
+        if (newVersion > 3) throw new IllegalStateException("Missing library migration to " + newVersion);
     }
 
     private void createProcessingTables(SQLiteDatabase db) {
@@ -65,7 +66,7 @@ final class LibraryStore extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE audio_chunks (recording_id TEXT NOT NULL REFERENCES recordings(id) "
                 + "ON DELETE CASCADE, chunk_index INTEGER NOT NULL, start_sample INTEGER NOT NULL, "
                 + "end_sample INTEGER NOT NULL, cut_reason TEXT NOT NULL, text TEXT NOT NULL DEFAULT '', "
-                + "finished INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(recording_id,chunk_index))");
+                + "finished INTEGER NOT NULL DEFAULT 0, speaker_id TEXT NOT NULL DEFAULT 'speaker_unknown', PRIMARY KEY(recording_id,chunk_index))");
     }
 
     static final class Job {
@@ -140,17 +141,17 @@ final class LibraryStore extends SQLiteOpenHelper {
         db.beginTransaction();
         try {
             db.delete("audio_chunks", "recording_id=?", new String[]{id});
-            db.delete("utterances", "recording_id=?", new String[]{id});
             for (ChunkPlanner.Chunk part : parts) {
                 ContentValues value = new ContentValues();
                 value.put("recording_id", id); value.put("chunk_index", part.index);
                 value.put("start_sample",part.start); value.put("end_sample",part.end);
-                value.put("cut_reason",part.reason);
+                value.put("cut_reason",part.reason); value.put("speaker_id",part.speakerId);
                 db.insertOrThrow("audio_chunks",null,value);
             }
             ContentValues job = new ContentValues();
             job.put("total_parts",parts.size()); job.put("completed_parts",0);
-            job.put("percent",35); job.put("stage","asr"); job.put("updated_at",System.currentTimeMillis());
+            job.put("percent",60); job.put("stage","asr");
+            job.put("model_version","GigaAM-v3+ERes2NetV2-speaker-v1"); job.put("updated_at",System.currentTimeMillis());
             db.update("processing_jobs",job,"recording_id=?",new String[]{id});
             db.setTransactionSuccessful();
         } finally { db.endTransaction(); }
@@ -158,9 +159,9 @@ final class LibraryStore extends SQLiteOpenHelper {
 
     List<ChunkPlanner.Chunk> chunks(String id) {
         List<ChunkPlanner.Chunk> result = new ArrayList<>();
-        try (Cursor c = getReadableDatabase().rawQuery("SELECT chunk_index,start_sample,end_sample,cut_reason "
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT chunk_index,start_sample,end_sample,cut_reason,speaker_id "
                 + "FROM audio_chunks WHERE recording_id=? ORDER BY chunk_index", new String[]{id})) {
-            while (c.moveToNext()) result.add(new ChunkPlanner.Chunk(c.getInt(0),c.getLong(1),c.getLong(2),c.getString(3)));
+            while (c.moveToNext()) result.add(new ChunkPlanner.Chunk(c.getInt(0),c.getLong(1),c.getLong(2),c.getString(3),c.getString(4)));
         }
         return result;
     }
@@ -183,12 +184,6 @@ final class LibraryStore extends SQLiteOpenHelper {
             if (db.update("audio_chunks",chunk,"recording_id=? AND chunk_index=? AND finished=0",
                     new String[]{id,String.valueOf(part.index)}) != 1)
                 throw new IllegalStateException("Chunk is missing or already saved");
-            if (!text.trim().isEmpty()) {
-                long start = part.start * 1000L / ChunkPlanner.SAMPLE_RATE;
-                long end = Math.max(start + 1, part.end * 1000L / ChunkPlanner.SAMPLE_RATE);
-                db.insertOrThrow("utterances",null,utteranceValues(id,
-                        new Utterance(part.index,"speaker_unknown",start,end,text)));
-            }
             int finished = 0, total = 0;
             try (Cursor c = db.rawQuery("SELECT COUNT(*),SUM(finished) FROM audio_chunks "
                     + "WHERE recording_id=?",new String[]{id})) {
@@ -196,11 +191,47 @@ final class LibraryStore extends SQLiteOpenHelper {
             }
             ContentValues progress = new ContentValues();
             progress.put("completed_parts",finished); progress.put("total_parts",total);
-            progress.put("percent",total == 0 ? 35 : 35 + 64 * finished / total);
+            progress.put("percent",total == 0 ? 60 : 60 + 39 * finished / total);
             progress.put("updated_at",System.currentTimeMillis());
             db.update("processing_jobs",progress,"recording_id=?",new String[]{id});
             db.setTransactionSuccessful();
         } finally { db.endTransaction(); }
+    }
+
+    void completeAudioJob(String id) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            List<Utterance> turns = new ArrayList<>();
+            boolean recognizedWords = false;
+            try (Cursor c = db.rawQuery("SELECT chunk_index,start_sample,end_sample,text,speaker_id,finished FROM audio_chunks WHERE recording_id=? ORDER BY chunk_index", new String[]{id})) {
+                while (c.moveToNext()) {
+                    if (c.getInt(5) != 1) throw new IllegalStateException("Incomplete audio job");
+                    if (!c.getString(3).trim().isEmpty()) recognizedWords = true;
+                    turns.add(new Utterance(c.getInt(0), c.getString(4),
+                            c.getLong(1) * 1000L / 16000, Math.max(c.getLong(1) * 1000L / 16000 + 1, c.getLong(2) * 1000L / 16000),
+                            c.getString(3).trim().isEmpty() ? Utterance.UNRECOGNIZED_TEXT : c.getString(3)));
+                }
+            }
+            if (!recognizedWords) throw new IllegalStateException("Не удалось распознать слова в записи");
+            db.delete("utterances", "recording_id=?", new String[]{id});
+            for (Utterance turn : turns) db.insertOrThrow("utterances", null, utteranceValues(id, turn));
+            updateJob(id, "complete", "done", 100, "");
+            db.setTransactionSuccessful();
+        } finally { db.endTransaction(); }
+    }
+
+    void resetAudioJob(String id) {
+        Job existing = job(id);
+        if (existing != null && existing.active()) throw new IllegalStateException("Обработка уже запущена");
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            db.delete("audio_chunks", "recording_id=?", new String[]{id});
+            db.delete("processing_jobs", "recording_id=?", new String[]{id});
+            db.setTransactionSuccessful();
+        } finally { db.endTransaction(); }
+        // Keep the previous transcript until the entire new job commits successfully.
     }
 
     File processingFile(String id) {

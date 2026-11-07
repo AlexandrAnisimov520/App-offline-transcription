@@ -66,7 +66,7 @@ final class QwenSummaryUi {
     void show(Recording recording) {
         if (dialog != null) dialog.dismiss();
         StringBuilder source = new StringBuilder();
-        for (Utterance u : recording.transcript)
+        for (Utterance u : recording.transcript) if (u.hasRecognizedText())
             source.append('[').append(TranscriptText.clock(u.startMs)).append("] ")
                     .append(u.speakerId).append(": ").append(u.text).append('\n');
         final String transcript = source.toString();

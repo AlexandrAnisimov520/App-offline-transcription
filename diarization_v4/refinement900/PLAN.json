@@ -1,0 +1,19 @@
+{
+  "thresholds": [
+    0.35,
+    0.45,
+    0.55,
+    0.65,
+    0.75
+  ],
+  "calibration": "ES2002b first900s",
+  "selection": "minimum segment DER; ties prefer fewer merges",
+  "validation": [
+    "ES2002a full",
+    "TS3004a first300s"
+  ],
+  "no_oracle_count": true,
+  "method": "exclusive-speech group prototypes, duration-weighted centroid merging, overlap cannot-link >=.1s",
+  "model": "same ERes2Net VoxCeleb; no training; prototypes cap20s per group",
+  "limitations": "AMI only; ES2002a/b share participants; short calibration; validation recordings previously inspected"
+}

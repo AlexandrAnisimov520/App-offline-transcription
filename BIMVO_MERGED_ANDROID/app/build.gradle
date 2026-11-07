@@ -21,8 +21,8 @@ android {
         applicationId 'com.bimvo.app'
         minSdk 26
         targetSdk 34
-        versionCode 3
-        versionName '0.3-local'
+        versionCode 5
+        versionName '0.5-speakers'
         buildConfigField 'boolean', 'BUNDLED_QWEN', bundleQwen.toString()
     }
 
@@ -118,4 +118,24 @@ tasks.configureEach { task ->
     if (task.name == 'preBuild' || (task.name.startsWith('merge') && task.name.endsWith('Assets'))) {
         task.dependsOn(tasks.named('ensureOfflineModels'))
     }
+}
+
+// The archive supplies a verified portable FP32 ERes2NetV2 export; never silently build without it.
+tasks.register('verifySpeakerModel') {
+    doLast {
+        File model = file('src/main/assets/models/speaker_embedding_v2_basic.onnx')
+        if (!model.isFile() || model.length() != 71425388L)
+            throw new GradleException('Missing ERes2NetV2 speaker_embedding_v2_basic.onnx (71,425,388 bytes)')
+        MessageDigest digest = MessageDigest.getInstance('SHA-256')
+        model.withInputStream { input ->
+            byte[] buffer = new byte[65536]; int count
+            while ((count = input.read(buffer)) >= 0) if (count > 0) digest.update(buffer, 0, count)
+        }
+        String sha = digest.digest().collect { String.format('%02x', it & 0xff) }.join()
+        if (sha != '94b4e4821e227503131df2be2b59084e3a6807e624a73c49144f0cc8cf5066d9')
+            throw new GradleException('ERes2NetV2 SHA-256 mismatch')
+    }
+}
+tasks.configureEach { task ->
+    if (task.name == 'preBuild') task.dependsOn(tasks.named('verifySpeakerModel'))
 }

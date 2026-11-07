@@ -109,6 +109,16 @@ public final class BimvoApplication extends Application {
         }
     }
 
+    boolean reprocessWithSpeakers(String id) {
+        Recording record = find(id);
+        if (record == null || record.demo || processing.isRunning(id) || !begin(Operation.WRITE)) return false;
+        io.execute(() -> {
+            try { store.resetAudioJob(id); finishOperation(R.string.changes_saved, id); }
+            catch (Exception e) { android.util.Log.e("BIMVO", "Cannot restart audio job", e); finishOperation(R.string.operation_failed, ""); }
+        });
+        return true;
+    }
+
     void cancelProcessing(String id) { processing.cancel(id); }
     boolean startJobFromService(String id, Runnable finished) { return processing.execute(id, finished); }
 

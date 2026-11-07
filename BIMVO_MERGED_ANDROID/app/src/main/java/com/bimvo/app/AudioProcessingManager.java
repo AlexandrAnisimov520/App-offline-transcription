@@ -15,7 +15,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** Serial VAD->ASR pipeline; no network, no fake result, restartable on persistent chunk boundaries. */
+/** Serial VAD->speaker embedding->global clustering->speaker-aware ASR pipeline; no network, no fake result, restartable on persistent chunk boundaries. */
 final class AudioProcessingManager {
     private final BimvoApplication application;
     private final LibraryStore store;
@@ -80,21 +80,14 @@ final class AudioProcessingManager {
             long totalSamples = pcm.length() / 2;
             if (totalSamples < 320) throw new IOException("Слишком короткая аудиозапись");
             List<ChunkPlanner.Chunk> parts = store.chunks(id);
-            if (!parts.isEmpty() && parts.get(parts.size()-1).end != totalSamples) parts = Collections.emptyList();
+            if (!parts.isEmpty() && (parts.get(parts.size()-1).end > totalSamples ||
+                    !SpeakerDiarization.VERSION.equals(parts.get(0).reason))) parts = Collections.emptyList();
             if (parts.isEmpty()) {
-                List<Long> pauses = Collections.emptyList();
-                if (totalSamples > ChunkPlanner.LIMIT) {
-                    final int[] last = {-1};
-                    pauses = SileroVad.findPauses(application, pcm, cancelled::get, percent -> {
-                        int value = 15 + Math.min(19, percent * 19 / 100);
-                        if (value != last[0]) { report(id,"vad", value); last[0] = value; }
-                    });
-                }
+                parts = SpeakerDiarization.plan(application, pcm, cancelled::get, (stage, percent) -> report(id, stage, percent));
                 checkCancel();
-                parts = ChunkPlanner.plan(totalSamples, pauses);
-                store.setChunkPlan(id,parts);
+                store.setChunkPlan(id, parts);
             }
-            report(id,"asr", Math.max(35, store.job(id).percent));
+            report(id,"asr", Math.max(60, store.job(id).percent));
             Set<Integer> done = store.completedChunks(id);
             if (done.size() != parts.size()) {
                 // Close the VAD session before allocating the 225 MB ASR model.
@@ -111,7 +104,7 @@ final class AudioProcessingManager {
                 }
             }
             checkCancel();
-            store.updateJob(id,"complete","done",100,"");
+            store.completeAudioJob(id);
             application.reportProcessing(id,store.job(id),true);
             pcm.delete(); // Original is never deleted; PCM can be regenerated for later models.
         } catch (InterruptedIOException e) {
