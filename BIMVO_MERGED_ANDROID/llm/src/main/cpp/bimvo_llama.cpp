@@ -77,8 +77,7 @@ Java_com_bimvo_llm_LlamaSession_nativeGenerate(JNIEnv * env, jclass, jlong h,
         char arch[64] = {};
         llama_model_meta_val_str(model.get(), "general.architecture", arch, sizeof(arch));
         if (std::string(arch) != "qwen3") throw std::runtime_error("Expected a Qwen3 GGUF model");
-        if (llama_model_n_params(model.get()) > 2000000000LL)
-            throw std::runtime_error("Use Qwen3-1.7B Q4_K_M on a 4 GB phone");
+
         auto cp = llama_context_default_params();
         cp.n_ctx = 1024;
         cp.n_batch = 64;

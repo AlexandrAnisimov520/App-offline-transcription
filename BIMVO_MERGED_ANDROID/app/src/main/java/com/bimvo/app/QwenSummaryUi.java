@@ -75,21 +75,35 @@ final class QwenSummaryUi {
         TextView output = new TextView(activity);
         output.setPadding(32, 24, 32, 24);
         output.setTextIsSelectable(true);
-        String cached = saved.getString(key, "");
+        final String stableKey = "summary:" + recording.id;
+        String previous = saved.getString(stableKey, "");
+        if (previous.isEmpty()) previous = saved.getString(key, "");
+        final String cached = previous;
+        if (!cached.isEmpty()) saved.edit().putString(stableKey, cached).apply();
         output.setText(!cached.isEmpty() ? cached : recording.transcript.isEmpty()
-                ? "Сначала добавьте готовую расшифровку. Qwen создаёт выжимку из текста, а не из аудио."
-                : model.isFile() ? "Qwen3 · офлайн · CPU\nНажмите «Создать конспект»."
+                ? "Сначала дождитесь готовности расшифровки."
+                : model.isFile() ? "Нажмите «Создать конспект»."
                 : BuildConfig.BUNDLED_QWEN ? "Модель готовится при первом запуске. Можно нажать «Создать конспект», обработка начнётся после подготовки."
                 : "Выберите Qwen3-1.7B Q4_K_M.gguf кнопкой «Модель GGUF». Файл будет скопирован во внутреннее хранилище приложения.");
         android.widget.ScrollView scroll = new android.widget.ScrollView(activity);
         scroll.addView(output);
-        AlertDialog d = new AlertDialog.Builder(activity).setTitle("Выжимка · Qwen3")
+        AlertDialog d = new AlertDialog.Builder(activity).setTitle("Конспект")
                 .setView(scroll).setPositiveButton("Создать конспект", null)
                 .setNeutralButton("Модель GGUF", (a, b) -> activity.pickQwenModel())
                 .setNegativeButton("Закрыть", (a, b) -> { }).create();
         dialog = d;
         d.setOnDismissListener(a -> { cancel(); if (dialog == d) dialog = null; });
         d.show();
+        output.setTextColor(BimvoStyle.WHITE);
+        output.setTextSize(16);
+        android.graphics.drawable.GradientDrawable background = new android.graphics.drawable.GradientDrawable();
+        background.setColor(BimvoStyle.CARD);
+        background.setCornerRadius(16 * activity.getResources().getDisplayMetrics().density);
+        if (d.getWindow() != null) d.getWindow().setBackgroundDrawable(background);
+        if (!cached.isEmpty()) {
+            showFinished(d, recording.title, cached, output);
+            return;
+        }
         if (BuildConfig.BUNDLED_QWEN)
             d.getButton(AlertDialog.BUTTON_NEUTRAL).setVisibility(android.view.View.GONE);
         d.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(!recording.transcript.isEmpty());
@@ -105,27 +119,21 @@ final class QwenSummaryUi {
             d.getButton(AlertDialog.BUTTON_NEGATIVE).setText("Отмена");
             d.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             output.setText(BuildConfig.BUNDLED_QWEN && !BundledQwenModel.ready(model)
-                    ? "Подготовка встроенной модели…" : "Загрузка GGUF и обработка расшифровки…");
+                    ? "Подготовка встроенной модели…" : "Составляем конспект…");
             WORKER.execute(() -> {
                 String result;
+                String complete = null;
                 try {
                     if (current.cancelled.get()) return;
                     if (BuildConfig.BUNDLED_QWEN) BundledQwenModel.prepare(activity);
                     if (current.cancelled.get()) return;
                     main.post(() -> {
                         if (!active(current, d)) return;
-                        output.setText("Загрузка GGUF и обработка расшифровки…");
+                        output.setText("Составляем конспект…");
                         watchMemory(current, d, output);
                     });
-                    android.app.ActivityManager.MemoryInfo memory = new android.app.ActivityManager.MemoryInfo();
-                    ((android.app.ActivityManager) activity.getSystemService(android.content.Context.ACTIVITY_SERVICE))
-                            .getMemoryInfo(memory);
-                    long reserve = 384L * 1024 * 1024;
-                    if (model.length() > 1536L * 1024 * 1024)
-                        throw new IllegalStateException("Для 4 ГБ ОЗУ выберите именно Qwen3-1.7B Q4_K_M (файл до 1,5 ГиБ)");
-                    if (memory.lowMemory || memory.availMem < model.length() + reserve)
-                        throw new IllegalStateException("Недостаточно свободной ОЗУ. Закройте другие приложения и повторите. Нужно примерно "
-                                + ((model.length() + reserve) / (1024 * 1024)) + " МиБ свободной памяти");
+                    // Attempt inference on lower-memory phones; the runtime monitor below stops only if memory becomes critical.
+
                     LlamaSession session = new LlamaSession();
                     current.attach(session);
                     long[] last = {0};
@@ -135,23 +143,30 @@ final class QwenSummaryUi {
                         last[0] = now;
                         String partial = new String(utf8, StandardCharsets.UTF_8);
                         main.post(() -> { if (active(current, d))
-                            output.setText("Генерация: " + tokens + "/192 токенов\n\n" + partial); });
+                            output.setText("Составляем конспект…\n\n" + partial); });
                     });
                     if (current.cancelled.get()) return;
-                    // The transcript fingerprint prevents showing a summary for edited text.
-                    if (!saved.edit().putString(key, summary).commit())
-                        throw new IllegalStateException("Не удалось сохранить выжимку");
+                    if (summary.trim().isEmpty()) throw new IllegalStateException("Получен пустой конспект. Попробуйте ещё раз.");
+                    // Keep the completed summary for this recording; subsequent opens offer export only.
+                    if (!saved.edit().putString(key, summary).putString(stableKey, summary).commit())
+                        throw new IllegalStateException("Не удалось сохранить конспект");
                     result = summary;
+                    complete = summary;
                 } catch (LinkageError e) {
                     result = "Нативная библиотека не загружена. Нужен 64-битный ARM64 Android-телефон и соответствующий APK: " + e.getMessage();
                 } catch (Exception | OutOfMemoryError e) {
-                    result = "Ошибка Qwen: " + e.getMessage();
+                    result = "Не удалось создать конспект: " + e.getMessage();
                 } finally { current.release(); }
                 final String message = result;
+                final String completedSummary = complete;
                 main.post(() -> {
                     if (!active(current, d)) return;
                     task = null;
                     output.setText(message);
+                    if (completedSummary != null) {
+                        showFinished(d, recording.title, completedSummary, output);
+                        return;
+                    }
                     d.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
                     d.getButton(AlertDialog.BUTTON_NEUTRAL).setEnabled(true);
                     d.getButton(AlertDialog.BUTTON_NEGATIVE).setText("Закрыть");
@@ -160,6 +175,26 @@ final class QwenSummaryUi {
             });
         });
     }
+    private void showFinished(AlertDialog d, String title, String summary, TextView output) {
+        output.setText(summary);
+        d.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        d.getButton(AlertDialog.BUTTON_POSITIVE).setText("Сохранить TXT");
+        d.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+        d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> activity.exportSummary(title, summary));
+        d.getButton(AlertDialog.BUTTON_NEUTRAL).setVisibility(android.view.View.VISIBLE);
+        d.getButton(AlertDialog.BUTTON_NEUTRAL).setText("Копировать");
+        d.getButton(AlertDialog.BUTTON_NEUTRAL).setEnabled(true);
+        d.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager)
+                    activity.getSystemService(Context.CLIPBOARD_SERVICE);
+            if (clipboard != null) {
+                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Конспект", summary));
+                android.widget.Toast.makeText(activity, "Конспект скопирован", android.widget.Toast.LENGTH_SHORT).show();
+            }
+        });
+        d.getButton(AlertDialog.BUTTON_NEGATIVE).setText("Закрыть");
+    }
+
     private boolean active(Task t, AlertDialog d) {
         return !destroyed && !t.cancelled.get() && task == t && dialog == d && d.isShowing();
     }
@@ -201,7 +236,7 @@ final class QwenSummaryUi {
                     while ((n = in.read(b)) != -1) {
                         if (current.cancelled.get()) throw new IllegalStateException("Отменено");
                         out.write(b, 0, n); total += n;
-                        if (total > 1536L * 1024 * 1024) throw new IllegalStateException("Для 4 ГБ ОЗУ нужен Qwen3-1.7B Q4_K_M, файл до 1,5 ГиБ");
+                        if (total > 1536L * 1024 * 1024) throw new IllegalStateException("Выберите модель размером не более 1,5 ГиБ");
                     }
                     out.getFD().sync();
                 }
@@ -214,8 +249,7 @@ final class QwenSummaryUi {
                 if (current.cancelled.get()) throw new IllegalStateException("Отменено");
                 // Same filesystem: POSIX rename atomically replaces the old model after a complete copy.
                 android.system.Os.rename(partial.getAbsolutePath(), model.getAbsolutePath());
-                saved.edit().clear().commit();
-                message = "GGUF сохранён. Откройте «Выжимка» и нажмите «Создать конспект». Архитектура и целостность проверяются движком при загрузке.";
+                message = "GGUF сохранён. Откройте «Конспект» и нажмите «Создать конспект». Архитектура и целостность проверяются движком при загрузке.";
             } catch (Exception | OutOfMemoryError e) { message = "Не удалось импортировать модель: " + e.getMessage(); }
             finally { partial.delete(); }
             final String result = message;

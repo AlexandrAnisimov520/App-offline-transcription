@@ -16,6 +16,8 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -37,6 +39,11 @@ public final class BimvoApplication extends Application {
     private final Set<Listener> listeners = new LinkedHashSet<>();
     private final AtomicBoolean cancelImport = new AtomicBoolean();
     private LibraryStore store;
+    private AudioProcessingManager processing;
+    private Map<String, LibraryStore.Job> processingJobs = Collections.emptyMap();
+    private List<String> interruptedJobs = Collections.emptyList();
+    private boolean recoveryScheduled;
+    private String recoveringId = "";
     private List<Recording> recordings = Collections.emptyList();
     private Operation operation = Operation.NONE;
     boolean ready;
@@ -58,6 +65,7 @@ public final class BimvoApplication extends Application {
         super.onCreate();
         QwenSummaryUi.prepareBundledModel(this);
         store = new LibraryStore(this);
+        processing = new AudioProcessingManager(this, store);
         io.execute(() -> {
             try {
                 store.recoverFiles();
@@ -67,8 +75,16 @@ public final class BimvoApplication extends Application {
                     catch (SecurityException ignored) { }
                 }
                 cleanExportCache();
+                List<String> resume = store.recoverJobs();
                 List<Recording> data = store.load();
-                main.post(() -> { recordings = Collections.unmodifiableList(data); ready = true; notifyChanged(); });
+                Map<String, LibraryStore.Job> states = store.loadJobs();
+                main.post(() -> {
+                    recordings = Collections.unmodifiableList(data);
+                    processingJobs = Collections.unmodifiableMap(states);
+                    interruptedJobs = resume;
+                    ready = true;
+                    notifyChanged();
+                });
             } catch (Exception e) {
                 main.post(() -> { loadError = R.string.library_load_failed; notifyChanged(); });
             }
@@ -78,6 +94,72 @@ public final class BimvoApplication extends Application {
     void observe(Listener listener) { listeners.add(listener); }
     void removeObserver(Listener listener) { listeners.remove(listener); }
     List<Recording> recordings() { return recordings; }
+    LibraryStore.Job processingJob(String id) { return processingJobs.get(id); }
+    boolean isProcessing(String id) { return processing.isRunning(id); }
+
+    boolean requestProcessing(String id) {
+        Recording record = find(id);
+        if (record == null || record.demo || !ready) return false;
+        LibraryStore.Job job = processingJob(id);
+        if (job != null && (job.active() || "complete".equals(job.status))) return false;
+        try { AudioProcessingService.start(this,id); return true; }
+        catch (RuntimeException e) {
+            android.util.Log.e("BIMVO","Unable to start foreground processing",e);
+            return false;
+        }
+    }
+
+    void cancelProcessing(String id) { processing.cancel(id); }
+    boolean startJobFromService(String id, Runnable finished) { return processing.execute(id, finished); }
+
+    void resumeInterruptedJobs() {
+        if (!ready || recoveryScheduled || interruptedJobs.isEmpty()) return;
+        // Foreground service restrictions on modern Android require the UI to be visible.
+        for (String id : interruptedJobs) {
+            LibraryStore.Job state = processingJob(id);
+            if (state != null && !state.canResume()) continue;
+            if (requestProcessing(id)) {
+                recoveryScheduled = true;
+                recoveringId = id;
+                return;
+            }
+        }
+    }
+
+    void reportProcessing(String id, LibraryStore.Job job, boolean reloadLibrary) {
+        if (job != null) main.post(() -> {
+            Map<String, LibraryStore.Job> values = new HashMap<>(processingJobs);
+            values.put(id,job);
+            processingJobs = Collections.unmodifiableMap(values);
+            notifyChanged();
+        });
+        if (reloadLibrary) refreshAfterProcessing();
+    }
+
+    void refreshAfterProcessing() {
+        io.execute(() -> {
+            try {
+                List<Recording> data = store.load();
+                Map<String,LibraryStore.Job> states = store.loadJobs();
+                main.post(() -> {
+                    recordings = Collections.unmodifiableList(data);
+                    processingJobs = Collections.unmodifiableMap(states);
+                    if (recoveryScheduled) {
+                        LibraryStore.Job recovered = states.get(recoveringId);
+                        // Per-chunk refresh must not launch the NEXT recovery during this one.
+                        if ((recovered == null || !recovered.active()) && !processing.isRunning(recoveringId)) {
+                            interruptedJobs = new java.util.ArrayList<>(interruptedJobs);
+                            interruptedJobs.remove(recoveringId); // never auto-loop on repeated model errors
+                            recoveryScheduled = false;
+                            recoveringId = "";
+                        }
+                    }
+                    notifyChanged();
+                });
+            } catch (Exception e) { android.util.Log.e("BIMVO","Failed to refresh library",e); }
+        });
+    }
+
     boolean busy() { return operation != Operation.NONE; }
     boolean importing() { return operation == Operation.IMPORT; }
 
@@ -185,6 +267,7 @@ public final class BimvoApplication extends Application {
             operation = Operation.NONE;
             postNotice(status);
             notifyChanged();
+            if (!imported.isEmpty()) requestProcessing(imported);
         });
     }
 
@@ -207,7 +290,7 @@ public final class BimvoApplication extends Application {
         return write(() -> store.replaceTranscript(recordingId, turns), R.string.changes_saved);
     }
 
-    /** Debug/integration only: import a real model-produced JSON transcript, no ASR is run here. */
+    /** Optional explicit override: import an external model-produced JSON transcript. */
     boolean importTranscriptJson(String recordingId, Uri uri) {
         Recording record = find(recordingId);
         if (record == null || record.demo || !begin(Operation.WRITE)) return false;
@@ -231,7 +314,10 @@ public final class BimvoApplication extends Application {
     }
 
     boolean rename(String id, String name) { return write(() -> store.rename(id, name), R.string.changes_saved); }
-    boolean delete(Recording r) { return write(() -> store.delete(r), R.string.record_removed); }
+    boolean delete(Recording r) {
+        if (processing.isRunning(r.id)) return false;
+        return write(() -> store.delete(r), R.string.record_removed);
+    }
     boolean updateUtterance(String id, Utterance u) {
         return write(() -> store.updateUtterance(id, u), R.string.changes_saved);
     }

@@ -17,7 +17,7 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 
-/** SAF URI -> private file -> metadata. No decoding of full audio, no inference, no network. */
+/** SAF URI -> private file -> metadata. Persists original bytes; the shared offline ASR pipeline starts once imported. */
 final class AudioImporter {
     interface Progress { void update(String name, long copied, long total); }
     static final class Failure extends IOException {

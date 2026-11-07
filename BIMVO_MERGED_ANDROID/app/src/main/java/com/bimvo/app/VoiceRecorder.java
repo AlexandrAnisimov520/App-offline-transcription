@@ -17,6 +17,12 @@ final class VoiceRecorder {
     boolean isRecording() { return recorder != null; }
     long elapsedMs() { return isRecording() ? SystemClock.elapsedRealtime() - startedAt : 0; }
 
+    int level() {
+        if (recorder == null) return 0;
+        try { return Math.min(100, (int)(100.0 * Math.sqrt(recorder.getMaxAmplitude() / 32767.0))); }
+        catch (RuntimeException e) { return 0; }
+    }
+
     void start(Context context) throws IOException {
         if (isRecording()) throw new IllegalStateException("Already recording");
         File dir = new File(context.getCacheDir(), "voice-capture");

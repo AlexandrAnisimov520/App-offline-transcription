@@ -1,2 +1,9 @@
 BIMVO_MERGED_ANDROID/APK/*.apk filter=lfs diff=lfs merge=lfs -text
 APK/*.apk filter=lfs diff=lfs merge=lfs -text
+BIMVO_MERGED_ANDROID.zip filter=lfs diff=lfs merge=lfs -text
+BIMVO_MERGED_ANDROID/app/src/main/assets/models/*.gguf filter=lfs diff=lfs merge=lfs -text
+BIMVO_MERGED_ANDROID/app/src/main/assets/models/*.onnx filter=lfs diff=lfs merge=lfs -text
+BIMVO_MERGED_ANDROID/app/build/** filter=lfs diff=lfs merge=lfs -text
+BIMVO_MERGED_ANDROID/llm/build/** filter=lfs diff=lfs merge=lfs -text
+BIMVO_MERGED_ANDROID/llm/.cxx/** filter=lfs diff=lfs merge=lfs -text
+BIMVO_MERGED_ANDROID/.gradle/** filter=lfs diff=lfs merge=lfs -text

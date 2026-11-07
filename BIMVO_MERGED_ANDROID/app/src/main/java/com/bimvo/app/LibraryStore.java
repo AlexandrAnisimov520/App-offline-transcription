@@ -18,7 +18,7 @@ final class LibraryStore extends SQLiteOpenHelper {
     final File audioDirectory;
 
     LibraryStore(Context context) {
-        super(context, "bimvo-library.db", null, 1);
+        super(context, "bimvo-library.db", null, 2);
         this.context = context.getApplicationContext();
         audioDirectory = new File(context.getFilesDir(), "audio");
         setWriteAheadLoggingEnabled(true);
@@ -37,6 +37,7 @@ final class LibraryStore extends SQLiteOpenHelper {
                 + "end_ms INTEGER NOT NULL CHECK(end_ms > start_ms), text TEXT NOT NULL, "
                 + "PRIMARY KEY(recording_id, turn_id))");
         db.execSQL("CREATE INDEX recordings_created ON recordings(created_at DESC)");
+        createProcessingTables(db);
         seed(db, "demo-team", R.string.demo_team, 12, 1,
                 new int[]{R.string.demo_team_1, R.string.demo_team_2, R.string.demo_team_3},
                 new int[]{1, 2, 3}, new int[]{0, 12, 34, 60});
@@ -50,8 +51,161 @@ final class LibraryStore extends SQLiteOpenHelper {
     }
 
     @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // Future schema changes must migrate existing user data, never drop/recreate it.
+        if (oldVersion == 1 && newVersion == 2) { createProcessingTables(db); return; }
         throw new IllegalStateException("Missing library migration " + oldVersion + " -> " + newVersion);
+    }
+
+    private void createProcessingTables(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE processing_jobs (recording_id TEXT PRIMARY KEY "
+                + "REFERENCES recordings(id) ON DELETE CASCADE, status TEXT NOT NULL DEFAULT 'queued', "
+                + "stage TEXT NOT NULL DEFAULT 'waiting', percent INTEGER NOT NULL DEFAULT 0, "
+                + "completed_parts INTEGER NOT NULL DEFAULT 0, total_parts INTEGER NOT NULL DEFAULT 0, "
+                + "error TEXT NOT NULL DEFAULT '', model_version TEXT NOT NULL DEFAULT 'GigaAM-v3-e2e-ctc-int8', "
+                + "updated_at INTEGER NOT NULL)");
+        db.execSQL("CREATE TABLE audio_chunks (recording_id TEXT NOT NULL REFERENCES recordings(id) "
+                + "ON DELETE CASCADE, chunk_index INTEGER NOT NULL, start_sample INTEGER NOT NULL, "
+                + "end_sample INTEGER NOT NULL, cut_reason TEXT NOT NULL, text TEXT NOT NULL DEFAULT '', "
+                + "finished INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(recording_id,chunk_index))");
+    }
+
+    static final class Job {
+        final String id, status, stage, error;
+        final int percent, completed, total;
+        Job(String id, String status, String stage, int percent, int completed, int total, String error) {
+            this.id = id; this.status = status; this.stage = stage; this.percent = percent;
+            this.completed = completed; this.total = total; this.error = error;
+        }
+        boolean active() { return "queued".equals(status) || "running".equals(status); }
+        boolean canResume() { return "paused".equals(status) || "failed".equals(status) || "interrupted".equals(status); }
+    }
+
+    java.util.Map<String, Job> loadJobs() {
+        java.util.Map<String, Job> jobs = new java.util.HashMap<>();
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT recording_id,status,stage,percent,"
+                + "completed_parts,total_parts,error FROM processing_jobs", null)) {
+            while (c.moveToNext()) {
+                Job j = new Job(c.getString(0), c.getString(1), c.getString(2), c.getInt(3),
+                        c.getInt(4), c.getInt(5), c.getString(6));
+                jobs.put(j.id, j);
+            }
+        }
+        return jobs;
+    }
+
+    Job job(String id) {
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT recording_id,status,stage,percent,"
+                + "completed_parts,total_parts,error FROM processing_jobs WHERE recording_id=?", new String[]{id})) {
+            return c.moveToFirst() ? new Job(c.getString(0),c.getString(1),c.getString(2),
+                    c.getInt(3),c.getInt(4),c.getInt(5),c.getString(6)) : null;
+        }
+    }
+
+    java.util.List<String> recoverJobs() {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues pause = new ContentValues();
+        pause.put("status", "interrupted"); pause.put("stage", "interrupted");
+        db.update("processing_jobs",pause,"status IN ('running','queued')",null);
+        List<String> resume = new ArrayList<>();
+        try (Cursor c = db.rawQuery("SELECT recording_id FROM processing_jobs WHERE status='interrupted' ORDER BY updated_at", null)) {
+            while (c.moveToNext()) resume.add(c.getString(0));
+        }
+        return resume;
+    }
+
+    boolean queueJob(String id) {
+        SQLiteDatabase db = getWritableDatabase();
+        Job existing = job(id);
+        if (existing != null && (existing.active() || "complete".equals(existing.status))) return false;
+        ContentValues values = new ContentValues();
+        values.put("status", "queued"); values.put("stage", "waiting"); values.put("error", "");
+        values.put("updated_at", System.currentTimeMillis());
+        if (existing == null) {
+            values.put("recording_id",id);
+            return db.insert("processing_jobs", null, values) != -1;
+        }
+        return db.update("processing_jobs", values, "recording_id=?", new String[]{id}) == 1;
+    }
+
+    void updateJob(String id, String status, String stage, int percent, String error) {
+        ContentValues values = new ContentValues();
+        values.put("status", status); values.put("stage", stage);
+        values.put("percent", Math.max(0, Math.min(100, percent)));
+        values.put("error", error == null ? "" : (error.length() > 240 ? error.substring(0,240) : error));
+        values.put("updated_at",System.currentTimeMillis());
+        getWritableDatabase().update("processing_jobs", values, "recording_id=?", new String[]{id});
+    }
+
+    void setChunkPlan(String id, List<ChunkPlanner.Chunk> parts) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            db.delete("audio_chunks", "recording_id=?", new String[]{id});
+            db.delete("utterances", "recording_id=?", new String[]{id});
+            for (ChunkPlanner.Chunk part : parts) {
+                ContentValues value = new ContentValues();
+                value.put("recording_id", id); value.put("chunk_index", part.index);
+                value.put("start_sample",part.start); value.put("end_sample",part.end);
+                value.put("cut_reason",part.reason);
+                db.insertOrThrow("audio_chunks",null,value);
+            }
+            ContentValues job = new ContentValues();
+            job.put("total_parts",parts.size()); job.put("completed_parts",0);
+            job.put("percent",35); job.put("stage","asr"); job.put("updated_at",System.currentTimeMillis());
+            db.update("processing_jobs",job,"recording_id=?",new String[]{id});
+            db.setTransactionSuccessful();
+        } finally { db.endTransaction(); }
+    }
+
+    List<ChunkPlanner.Chunk> chunks(String id) {
+        List<ChunkPlanner.Chunk> result = new ArrayList<>();
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT chunk_index,start_sample,end_sample,cut_reason "
+                + "FROM audio_chunks WHERE recording_id=? ORDER BY chunk_index", new String[]{id})) {
+            while (c.moveToNext()) result.add(new ChunkPlanner.Chunk(c.getInt(0),c.getLong(1),c.getLong(2),c.getString(3)));
+        }
+        return result;
+    }
+
+    java.util.Set<Integer> completedChunks(String id) {
+        java.util.Set<Integer> done = new java.util.HashSet<>();
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT chunk_index FROM audio_chunks "
+                + "WHERE recording_id=? AND finished=1",new String[]{id})) {
+            while (c.moveToNext()) done.add(c.getInt(0));
+        }
+        return done;
+    }
+
+    void finishChunk(String id, ChunkPlanner.Chunk part, String text) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            ContentValues chunk = new ContentValues();
+            chunk.put("text",text); chunk.put("finished",1);
+            if (db.update("audio_chunks",chunk,"recording_id=? AND chunk_index=? AND finished=0",
+                    new String[]{id,String.valueOf(part.index)}) != 1)
+                throw new IllegalStateException("Chunk is missing or already saved");
+            if (!text.trim().isEmpty()) {
+                long start = part.start * 1000L / ChunkPlanner.SAMPLE_RATE;
+                long end = Math.max(start + 1, part.end * 1000L / ChunkPlanner.SAMPLE_RATE);
+                db.insertOrThrow("utterances",null,utteranceValues(id,
+                        new Utterance(part.index,"speaker_unknown",start,end,text)));
+            }
+            int finished = 0, total = 0;
+            try (Cursor c = db.rawQuery("SELECT COUNT(*),SUM(finished) FROM audio_chunks "
+                    + "WHERE recording_id=?",new String[]{id})) {
+                if (c.moveToFirst()) { total = c.getInt(0); finished = c.getInt(1); }
+            }
+            ContentValues progress = new ContentValues();
+            progress.put("completed_parts",finished); progress.put("total_parts",total);
+            progress.put("percent",total == 0 ? 35 : 35 + 64 * finished / total);
+            progress.put("updated_at",System.currentTimeMillis());
+            db.update("processing_jobs",progress,"recording_id=?",new String[]{id});
+            db.setTransactionSuccessful();
+        } finally { db.endTransaction(); }
+    }
+
+    File processingFile(String id) {
+        if (!id.matches("[a-f0-9-]{36}")) throw new IllegalArgumentException("Invalid recording id");
+        return new File(new File(context.getFilesDir(),"processing"),id+".pcm");
     }
 
     private void seed(SQLiteDatabase db, String id, int titleId, int minutes, int ageDays,
@@ -122,6 +276,19 @@ final class LibraryStore extends SQLiteOpenHelper {
         if (clean.isEmpty() || clean.length() > 200) throw new IllegalArgumentException("Invalid title");
         ContentValues values = new ContentValues();
         values.put("title", clean);
+        String original;
+        try (Cursor cursor = getReadableDatabase().query("recordings", new String[]{"original_name"},
+                "id=?", new String[]{id}, null, null, null)) {
+            if (!cursor.moveToFirst()) throw new IllegalStateException("Recording not found");
+            original = cursor.getString(0);
+        }
+        String extension = "";
+        int dot = original == null ? -1 : original.lastIndexOf('.');
+        if (dot >= 0 && original.substring(dot).matches("\\.[A-Za-z0-9]{1,10}")) extension = original.substring(dot);
+        String filename = ImportFiles.safeDisplayName(clean).replace('/', '_').replace('\\', '_');
+        if (!extension.isEmpty() && !filename.toLowerCase(java.util.Locale.ROOT).endsWith(extension.toLowerCase(java.util.Locale.ROOT)))
+            filename += extension;
+        values.put("original_name", filename);
         if (getWritableDatabase().update("recordings", values, "id=?", new String[]{id}) != 1)
             throw new IllegalStateException("Recording not found");
     }
@@ -162,6 +329,13 @@ final class LibraryStore extends SQLiteOpenHelper {
         }
         // If deletion fails, startup cleanup retries; the entry is already durably removed.
         if (moved) trash.delete();
+        processingFile(recording.id).delete();
+        android.content.SharedPreferences summaries = context.getSharedPreferences("qwen-summaries-v1", 0);
+        android.content.SharedPreferences.Editor edit = summaries.edit().remove("summary:" + recording.id);
+        for (String key : summaries.getAll().keySet()) {
+            if (key.startsWith(recording.id + ":") || key.contains(":" + recording.id + ":")) edit.remove(key);
+        }
+        edit.commit();
     }
 
     void recoverFiles() throws IOException {
@@ -183,5 +357,19 @@ final class LibraryStore extends SQLiteOpenHelper {
                 file.delete();
             }
         }
+        File processing = new File(context.getFilesDir(),"processing");
+        if (!processing.isDirectory() && !processing.mkdirs()) throw new IOException("Processing directory unavailable");
+        File[] temporary = processing.listFiles();
+        if (temporary != null) for (File f : temporary) {
+            String name = f.getName();
+            if (name.endsWith(".part") || !name.matches("[a-f0-9-]{36}\\.pcm")
+                    || !referenced.contains(findStoredNameForId(records, name.substring(0,Math.min(36,name.length())))))
+                f.delete();
+        }
+    }
+
+    private static String findStoredNameForId(List<Recording> records, String id) {
+        for (Recording record : records) if (record.id.equals(id)) return record.storedName;
+        return "";
     }
 }

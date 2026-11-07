@@ -1,21 +1,21 @@
+import java.security.MessageDigest
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+
 plugins {
     id 'com.android.application'
 }
 
-dependencies { implementation project(':llm') }
-
-def bundledAssetsPath = providers.gradleProperty('bundledQwenAssets').orNull
-def bundledAssets = bundledAssetsPath == null ? null : rootProject.file(bundledAssetsPath)
-if (bundledAssets != null &&
-        !new File(bundledAssets, 'models/Qwen3-1.7B-Q4_K_M.gguf').isFile()) {
-    throw new GradleException("Missing bundled Qwen model in ${bundledAssets}/models")
+def bundledQwenModel = file('src/main/assets/models/Qwen3-1.7B-Q4_K_M.gguf')
+def bundleQwen = bundledQwenModel.isFile()
+if (bundleQwen && bundledQwenModel.length() != 1282439264L) {
+    throw new GradleException('Bundled Qwen GGUF has an unexpected size')
 }
+
 
 android {
     namespace 'com.bimvo.app'
     compileSdk 35
-    buildToolsVersion '35.0.0'
-    ndkVersion '28.2.13676358'
 
     defaultConfig {
         applicationId 'com.bimvo.app'
@@ -23,13 +23,7 @@ android {
         targetSdk 34
         versionCode 3
         versionName '0.3-local'
-        buildConfigField 'boolean', 'BUNDLED_QWEN', (bundledAssets != null).toString()
-    }
-
-    buildFeatures { buildConfig true }
-    if (bundledAssets != null) {
-        sourceSets.main.assets.srcDir(bundledAssets)
-        androidResources { noCompress += 'gguf' }
+        buildConfigField 'boolean', 'BUNDLED_QWEN', bundleQwen.toString()
     }
 
     buildTypes {
@@ -41,5 +35,87 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// CPU-only local ONNX inference; models are bundled into the APK at build time.
+dependencies {
+    implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.24.3'
+    implementation project(':llm')
+}
+
+android {
+    androidResources { noCompress += ['onnx', 'gguf'] }
+    buildFeatures { buildConfig true }
+    defaultConfig {
+        ndk { abiFilters 'arm64-v8a', 'x86_64' }
+    }
+}
+
+// First build downloads verified public MIT-licensed weights ON THE DEVELOPER COMPUTER.
+// There is no download, permission, or internet requirement inside the installed app.
+def offlineModelFiles = [
+    [name: 'silero_vad.onnx',
+     url: 'https://raw.githubusercontent.com/snakers4/silero-vad/60b7ffa243625ebdc1070275a29f18c87843786a/src/silero_vad/data/silero_vad.onnx',
+     sha: '1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3', min: 1_000_000L],
+    [name: 'v3_e2e_ctc.int8.onnx',
+     url: 'https://huggingface.co/istupakov/gigaam-v3-onnx/resolve/main/v3_e2e_ctc.int8.onnx?download=true',
+     sha: '2e3fcb7a7b66030336fd10c2fcfb033bd1dc7e1bf238fe5cfd83b1d0cfc9d28e', min: 100_000_000L],
+    [name: 'v3_e2e_ctc_vocab.txt',
+     url: 'https://huggingface.co/istupakov/gigaam-v3-onnx/resolve/main/v3_e2e_ctc_vocab.txt?download=true',
+     sha: '', min: 1000L]
+]
+
+tasks.register('ensureOfflineModels') {
+    description = 'Download and SHA-256-verify Silero VAD and GigaAM offline assets for this APK'
+    doLast {
+        File dir = file('src/main/assets/models')
+        dir.mkdirs()
+        offlineModelFiles.each { model ->
+            File target = new File(dir, model.name)
+            def hashFile = { File source ->
+                MessageDigest digest = MessageDigest.getInstance('SHA-256')
+                source.withInputStream { stream ->
+                    byte[] buf = new byte[65536]
+                    int count
+                    while ((count = stream.read(buf)) >= 0) {
+                        if (count > 0) digest.update(buf, 0, count)
+                    }
+                }
+                digest.digest().collect { String.format('%02x', it & 0xff) }.join()
+            }
+            def valid = { File source -> source.isFile() && source.length() > model.min &&
+                    (!model.sha || hashFile(source).equalsIgnoreCase(model.sha)) }
+            if (!valid(target)) {
+                File part = new File(dir, model.name + '.download')
+                part.delete()
+                logger.lifecycle("BIMVO: getting offline model {} (first build only)", model.name)
+                try {
+                    def conn = new URL(model.url).openConnection()
+                    conn.setConnectTimeout(20000)
+                    conn.setReadTimeout(90000)
+                    conn.setRequestProperty('User-Agent', 'BIMVO-Android-Offline-Build')
+                    conn.getInputStream().withCloseable { source ->
+                        part.withOutputStream { out ->
+                            byte[] buf = new byte[65536]
+                            int n
+                            while ((n = source.read(buf)) >= 0) if (n > 0) out.write(buf, 0, n)
+                        }
+                    }
+                    if (!valid(part)) throw new GradleException('Model SHA-256/length validation failed for ' + model.name)
+                    Files.move(part.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                } catch (Exception error) {
+                    part.delete()
+                    throw new GradleException('Offline model download failed for ' + model.name +
+                            '. Recheck connection or run scripts/prepare_models.py manually.', error)
+                }
+            }
+        }
+    }
+}
+
+tasks.configureEach { task ->
+    if (task.name == 'preBuild' || (task.name.startsWith('merge') && task.name.endsWith('Assets'))) {
+        task.dependsOn(tasks.named('ensureOfflineModels'))
     }
 }
