@@ -1,0 +1,13 @@
+{
+  "original_zip_sha256": "40afa4d24794c9e69ad0ce038cd277d6a51d0d3b1e29ce1e42b5627bfaf04900",
+  "changed_original_files": [
+    "settings.gradle",
+    "build.gradle",
+    "qa/JavaSyntaxCheck.java",
+    "qa/verify_structure.py",
+    "app/build.gradle",
+    "app/src/main/java/com/bimvo/app/MainActivity.java",
+    "app/src/main/res/values/styles.xml"
+  ],
+  "unchanged_original_files": 55
+}

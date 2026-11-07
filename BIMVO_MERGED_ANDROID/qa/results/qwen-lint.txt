@@ -1,0 +1,255 @@
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\QwenSummaryUi.java:188: Warning: Consider using apply() instead; commit writes its data to persistent storage immediately, whereas apply will handle it in the background [ApplySharedPref]
+                saved.edit().clear().commit();
+                                     ~~~~~~~~
+
+   Explanation for issues of type "ApplySharedPref":
+   Consider using apply() instead of commit on shared preferences. Whereas
+   commit blocks and writes its data to persistent storage immediately, apply
+   will handle it in the background.
+
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\build.gradle:16: Warning: Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the android.os.Build.VERSION_CODES javadoc for details. [OldTargetApi]
+        targetSdk 34
+        ~~~~~~~~~~~~
+
+   Explanation for issues of type "OldTargetApi":
+   When your application runs on a version of Android that is more recent than
+   your targetSdkVersion specifies that it has been tested with, various
+   compatibility modes kick in. This ensures that your application continues
+   to work, but it may look out of place. For example, if the targetSdkVersion
+   is less than 14, your app may get an option button in the UI.
+
+   To fix this issue, set the targetSdkVersion to the highest available value.
+   Then test your app to make sure everything works correctly. You may want to
+   consult the compatibility notes to see what changes apply to each version
+   you are adding support for:
+   https://developer.android.com/reference/android/os/Build.VERSION_CODES.html
+   as well as follow this guide:
+   https://developer.android.com/distribute/best-practices/develop/target-sdk.
+   html
+
+   https://developer.android.com/distribute/best-practices/develop/target-sdk.html
+
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\AndroidManifest.xml:17: Warning: Should not restrict activity to fixed orientation. This may not be suitable for different form factors, causing the app to be letterboxed. [DiscouragedApi]
+            android:screenOrientation="unspecified"
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "DiscouragedApi":
+   Discouraged APIs are allowed and are not deprecated, but they may be unfit
+   for common use (e.g. due to slow performance or subtle behavior).
+
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\AndroidManifest.xml:7: Warning: The attribute android:allowBackup is deprecated from Android 12 and higher and may be removed in future versions. Consider adding the attribute android:dataExtractionRules specifying an @xml resource which configures cloud backups and device transfers on Android 12 and higher. [DataExtractionRules]
+        android:allowBackup="false"
+                             ~~~~~
+
+   Explanation for issues of type "DataExtractionRules":
+   Before Android 12, the attributes android:allowBackup and
+   android:fullBackupContent were used to configure all forms of backup,
+   including cloud backups, device-to-device transfers and adb backup.
+
+   In Android 12 and higher, these attributes have been deprecated and will
+   only apply to cloud backups. You should instead use the attribute
+   android:dataExtractionRules, specifying an @xml resource that configures
+   which files to back up, for cloud backups and for device-to-device
+   transfers, separately. If your minSdkVersion supports older versions,
+   you'll still want to specify an android:fullBackupContent resource if the
+   default behavior is not right for your app.
+
+   https://developer.android.com/about/versions/12/backup-restore#xml-changes
+   https://goo.gle/DataExtractionRules
+
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\GlyphView.java:40: Warning: Avoid object allocations during draw/layout operations (preallocate and reuse instead) [DrawAllocation]
+        Path p = new Path();
+                 ~~~~~~~~~~
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\GlyphView.java:49: Warning: Avoid object allocations during draw/layout operations (preallocate and reuse instead) [DrawAllocation]
+                p.addRoundRect(new RectF(9,2,15,15),3,3,Path.Direction.CW);
+                               ~~~~~~~~~~~~~~~~~~~~
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\PrismView.java:37: Warning: Avoid object allocations during draw/layout operations (preallocate and reuse instead) [DrawAllocation]
+        paint.setShader(new LinearGradient(0, 0, w, h,
+                        ^
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\PrismView.java:39: Warning: Avoid object allocations during draw/layout operations (preallocate and reuse instead) [DrawAllocation]
+        Path outside = new Path();
+                       ~~~~~~~~~~
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\TimelineView.java:84: Warning: Avoid object allocations during draw/layout operations (preallocate and reuse instead) [DrawAllocation]
+                RectF rect=new RectF(begin,center-dp(6),Math.max(begin+dp(3),end),center+dp(6));
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "DrawAllocation":
+   You should avoid allocating objects during a drawing or layout operation.
+   These are called frequently, so a smooth UI can be interrupted by garbage
+   collection pauses caused by the object allocations.
+
+   The way this is generally handled is to allocate the needed objects up
+   front and to reuse them for each drawing operation.
+
+   Some methods allocate memory on your behalf (such as Bitmap.create), and
+   these should be handled in the same way.
+
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\MainActivity.java:920: Warning: Unnecessary; SDK_INT is always >= 26 [ObsoleteSdkInt]
+        if (Build.VERSION.SDK_INT >= 23 && checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\res\mipmap-anydpi-v26: Warning: This folder configuration (v26) is unnecessary; minSdkVersion is 26. Merge all the resources in this folder into mipmap-anydpi. [ObsoleteSdkInt]
+
+   Explanation for issues of type "ObsoleteSdkInt":
+   This check flags version checks that are not necessary, because the
+   minSdkVersion (or surrounding known API level) is already at least as high
+   as the version checked for.
+
+   Similarly, it also looks for resources in -vNN folders, such as values-v14
+   where the version qualifier is less than or equal to the minSdkVersion,
+   where the contents should be merged into the best folder.
+
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\res\values\strings.xml:81: Warning: The resource R.string.close appears to be unused [UnusedResources]
+    <string name="close">Закрыть</string>
+            ~~~~~~~~~~~~
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\res\values\strings.xml:110: Warning: The resource R.string.recorder_notice appears to be unused [UnusedResources]
+    <string name="recorder_notice">Запись с микрофона сохраняется в журнале BIMVO. Распознавание подключается отдельно.</string>
+            ~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "UnusedResources":
+   Unused resources make applications larger and slow down builds.
+
+
+   The unused resource check can ignore tests. If you want to include
+   resources that are only referenced from tests, consider packaging them in a
+   test source set instead.
+
+   You can include test sources in the unused resource check by setting the
+   system property lint.unused-resources.include-tests =true, and to exclude
+   them (usually for performance reasons), use
+   lint.unused-resources.exclude-tests =true.
+   ,
+
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\AudioImporter.java:53: Warning: Consider also using StorageManager#getAllocatableBytes and allocateBytes which will consider clearable cached data [UsableSpace]
+        if (declaredSize > 0 && declaredSize > Math.max(0, store.audioDirectory.getUsableSpace() - ImportFiles.FREE_SPACE_RESERVE))
+                                                                                ~~~~~~~~~~~~~~
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\AudioImporter.java:99: Warning: Consider also using StorageManager#getAllocatableBytes and allocateBytes which will consider clearable cached data [UsableSpace]
+        if (source.length() > Math.max(0, store.audioDirectory.getUsableSpace() - ImportFiles.FREE_SPACE_RESERVE))
+                                                               ~~~~~~~~~~~~~~
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\ImportFiles.java:44: Warning: Consider also using StorageManager#getAllocatableBytes and allocateBytes which will consider clearable cached data [UsableSpace]
+                    if (target.getParentFile().getUsableSpace() < FREE_SPACE_RESERVE + buffer.length)
+                                               ~~~~~~~~~~~~~~
+
+   Explanation for issues of type "UsableSpace":
+   When you need to allocate disk space for large files, consider using the
+   new allocateBytes(FileDescriptor, long) API, which will automatically clear
+   cached files belonging to other apps (as needed) to meet your request.
+
+   When deciding if the device has enough disk space to hold your new data,
+   call getAllocatableBytes(UUID) instead of using getUsableSpace(), since the
+   former will consider any cached data that the system is willing to clear on
+   your behalf.
+
+   Note that these methods require API level 26. If your app is running on
+   older devices, you will probably need to use both APIs, conditionally
+   switching on Build.VERSION.SDK_INT. Lint only looks in the same compilation
+   unit to see if you are already using both APIs, so if it warns even though
+   you are already using the new API, consider moving the calls to the same
+   file or suppressing the warning.
+
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\res\mipmap-hdpi\ic_launcher.png: Warning: Launcher icon used as round icon did not have a circular shape [IconLauncherShape]
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\res\mipmap-mdpi\ic_launcher.png: Warning: Launcher icon used as round icon did not have a circular shape [IconLauncherShape]
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\res\mipmap-xhdpi\ic_launcher.png: Warning: Launcher icon used as round icon did not have a circular shape [IconLauncherShape]
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\res\mipmap-xxhdpi\ic_launcher.png: Warning: Launcher icon used as round icon did not have a circular shape [IconLauncherShape]
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\res\mipmap-xxxhdpi\ic_launcher.png: Warning: Launcher icon used as round icon did not have a circular shape [IconLauncherShape]
+
+   Explanation for issues of type "IconLauncherShape":
+   According to the Android Design Guide
+   (https://d.android.com/r/studio-ui/designer/material/iconography) your
+   launcher icons should "use a distinct silhouette", a "three-dimensional,
+   front view, with a slight perspective as if viewed from above, so that
+   users perceive some depth."
+
+   The unique silhouette implies that your launcher icon should not be a
+   filled square.
+
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\res\mipmap-anydpi-v26\ic_launcher.xml:2: Warning: The application adaptive icon is missing a monochrome tag [MonochromeLauncherIcon]
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+^
+
+   Explanation for issues of type "MonochromeLauncherIcon":
+   If android:roundIcon and android:icon are both in your manifest, you must
+   either remove the reference to android:roundIcon if it is not needed; or,
+   supply the monochrome icon in the drawable defined by the android:roundIcon
+   and android:icon attribute.
+
+   For example, if android:roundIcon and android:icon are both in the
+   manifest, a launcher might choose to use android:roundIcon over
+   android:icon to display the adaptive app icon. Therefore, your themed
+   application iconwill not show if your monochrome attribute is not also
+   specified in android:roundIcon.
+
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\GlyphView.java:11: Warning: Custom view GlyphView is missing constructor used by tools: (Context) or (Context,AttributeSet) or (Context,AttributeSet,int) [ViewConstructor]
+public final class GlyphView extends View {
+                   ~~~~~~~~~
+
+   Explanation for issues of type "ViewConstructor":
+   Some layout tools (such as the Android layout editor) need to find a
+   constructor with one of the following signatures:
+   * View(Context context)
+   * View(Context context, AttributeSet attrs)
+   * View(Context context, AttributeSet attrs, int defStyle)
+
+   If your custom view needs to perform initialization which does not apply
+   when used in a layout editor, you can surround the given code with a check
+   to see if View#isInEditMode() is false, since that method will return false
+   at runtime but true within a user interface editor.
+
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\MainActivity.java:1102: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+        if (percentLabel != null) percentLabel.setText(processingProgress+"%");
+                                                       ~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\QwenSummaryUi.java:79: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+            if (!model.isFile()) { output.setText("Сначала выберите модель GGUF."); return; }
+                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\QwenSummaryUi.java:85: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+            output.setText("Загрузка GGUF и обработка расшифровки…");
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\QwenSummaryUi.java:109: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+                            output.setText("Генерация: " + tokens + "/192 токенов\n\n" + partial); });
+                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "SetTextI18n":
+   When calling TextView#setText
+   * Never call Number#toString() to format numbers; it will not handle
+   fraction separators and locale-specific digits properly. Consider using
+   String#format with proper format specifications (%d or %f) instead.
+   * Do not pass a string literal (e.g. "Hello") to display text. Hardcoded
+   text can not be properly translated to other languages. Consider using
+   Android resource strings instead.
+   * Do not build messages by concatenating text chunks. Such messages can not
+   be properly translated.
+
+   https://developer.android.com/guide/topics/resources/localization.html
+
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\MainActivity.java:636: Warning: Use "Gravity.START" instead of "Gravity.LEFT" to ensure correct behavior in right-to-left locales [RtlHardcoded]
+        brand.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+                                 ~~~~
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\MainActivity.java:1026: Warning: Use "Gravity.END" instead of "Gravity.RIGHT" to ensure correct behavior in right-to-left locales [RtlHardcoded]
+        selected.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL);
+                                    ~~~~~
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\MainActivity.java:1080: Warning: Use "Gravity.END" instead of "Gravity.RIGHT" to ensure correct behavior in right-to-left locales [RtlHardcoded]
+            phaseLabels[i].setGravity(Gravity.RIGHT);
+                                              ~~~~~
+C:\Users\User\Nuclear-IT-hack-BimboTeam\artifacts\bimvo-llama-build\app\src\main\java\com\bimvo\app\MainActivity.java:1305: Warning: Use "Gravity.END" instead of "Gravity.RIGHT" to ensure correct behavior in right-to-left locales [RtlHardcoded]
+        footer.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL);
+                                  ~~~~~
+
+   Explanation for issues of type "RtlHardcoded":
+   Using Gravity#LEFT and Gravity#RIGHT can lead to problems when a layout is
+   rendered in locales where text flows from right to left. Use Gravity#START
+   and Gravity#END instead. Similarly, in XML gravity and layout_gravity
+   attributes, use start rather than left.
+
+   For XML attributes such as paddingLeft and layout_marginLeft, use
+   paddingStart and layout_marginStart. NOTE: If your minSdkVersion is less
+   than 17, you should add both the older left/right attributes as well as the
+   new start/end attributes. On older platforms, where RTL is not supported
+   and the start/end attributes are unknown and therefore ignored, you need
+   the older left/right attributes. There is a separate lint check which
+   catches that type of error.
+
+   (Note: For Gravity#LEFT and Gravity#START, you can use these constants even
+   when targeting older platforms, because the start bitmask is a superset of
+   the left bitmask. Therefore, you can use gravity="start" rather than
+   gravity="left|start".)
+
+0 errors, 31 warnings

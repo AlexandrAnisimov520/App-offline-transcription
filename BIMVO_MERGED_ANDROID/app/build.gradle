@@ -1,0 +1,45 @@
+plugins {
+    id 'com.android.application'
+}
+
+dependencies { implementation project(':llm') }
+
+def bundledAssetsPath = providers.gradleProperty('bundledQwenAssets').orNull
+def bundledAssets = bundledAssetsPath == null ? null : rootProject.file(bundledAssetsPath)
+if (bundledAssets != null &&
+        !new File(bundledAssets, 'models/Qwen3-1.7B-Q4_K_M.gguf').isFile()) {
+    throw new GradleException("Missing bundled Qwen model in ${bundledAssets}/models")
+}
+
+android {
+    namespace 'com.bimvo.app'
+    compileSdk 35
+    buildToolsVersion '35.0.0'
+    ndkVersion '28.2.13676358'
+
+    defaultConfig {
+        applicationId 'com.bimvo.app'
+        minSdk 26
+        targetSdk 34
+        versionCode 3
+        versionName '0.3-local'
+        buildConfigField 'boolean', 'BUNDLED_QWEN', (bundledAssets != null).toString()
+    }
+
+    buildFeatures { buildConfig true }
+    if (bundledAssets != null) {
+        sourceSets.main.assets.srcDir(bundledAssets)
+        androidResources { noCompress += 'gguf' }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

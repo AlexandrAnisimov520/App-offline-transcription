@@ -1,0 +1,2 @@
+BIMVO_MERGED_ANDROID/APK/*.apk filter=lfs diff=lfs merge=lfs -text
+APK/*.apk filter=lfs diff=lfs merge=lfs -text

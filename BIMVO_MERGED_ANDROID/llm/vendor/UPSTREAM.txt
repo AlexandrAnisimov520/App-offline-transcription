@@ -1,0 +1,5 @@
+llama.cpp — https://github.com/ggml-org/llama.cpp
+Pinned commit: 669204ee2b9004845b34f26466a91d003edc98aa
+License: MIT (llama.cpp/LICENSE and bundled ggml licenses).
+Vendored unchanged build subset: CMakeLists.txt, LICENSE, AUTHORS (if present), cmake/, include/, src/, ggml/, vendor/.
+BIMVO bridge is in llm/src/main/cpp/, outside the vendored sources.
