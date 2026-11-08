@@ -1,0 +1,111 @@
+PASS: settings.gradle
+PASS: build.gradle
+PASS: gradlew
+PASS: gradlew.bat
+PASS: gradle.properties
+PASS: gradle/wrapper/gradle-wrapper.jar
+PASS: gradle/wrapper/gradle-wrapper.properties
+PASS: app/build.gradle
+PASS: app/src/main/AndroidManifest.xml
+PASS: README.md
+PASS: Gradle bootstrap jar readable
+PASS: production source: MainActivity
+PASS: production source: BimvoApplication
+PASS: production source: AudioImporter
+PASS: production source: ImportFiles
+PASS: production source: LibraryStore
+PASS: production source: Recording
+PASS: production source: Utterance
+PASS: production source: TranscriptText
+PASS: production source: TimelineView
+PASS: production source: BimvoStyle
+PASS: production source: PrismView
+PASS: production source: GlyphView
+PASS: production source: DotGridView
+PASS: XML parses: AndroidManifest.xml
+PASS: XML parses: res/values/strings.xml
+PASS: XML parses: res/values/colors.xml
+PASS: XML parses: res/values/styles.xml
+PASS: XML parses: res/mipmap-anydpi-v26/ic_launcher.xml
+PASS: no Internet, microphone or broad storage permissions
+PASS: application-scoped IO state registered
+PASS: automatic application backup disabled
+PASS: new launcher icon registered
+PASS: adaptive round icon registered
+PASS: all Java string references resolve
+PASS: drawable reference resolves: login_prism
+PASS: drawable reference resolves: splash_reference
+PASS: drawable reference resolves: login_ref_lights
+PASS: screen routed: SPLASH
+PASS: screen routed: LOGIN
+PASS: screen routed: HOME
+PASS: screen routed: UPLOAD
+PASS: screen routed: PROCESSING
+PASS: screen routed: TRANSCRIPT
+PASS: screen routed: MAP
+PASS: screen routed: RECORDS
+PASS: screen routed: EXPORT
+PASS: screen routed: PROFILE
+PASS: screen routed: DETAILS
+PASS: optional use case: onboarding_lecture
+PASS: optional use case: onboarding_meeting
+PASS: optional use case: onboarding_personal
+PASS: introduction gated by saved completion
+PASS: skip/finish saved persistently
+PASS: onboarding stage saved for rotation
+PASS: skip action wired
+PASS: real system audio picker
+PASS: local file picker requested
+PASS: real output document picker
+PASS: selected content URI actually read
+PASS: private persistent audio folder (not cache-only)
+PASS: bounded 64 KiB copying buffer
+PASS: disk reserve checked during copying
+PASS: cancellable import path
+PASS: audio bytes flushed before commit
+PASS: imported recording has no fabricated transcript
+PASS: content duplicate detection
+PASS: database also guards duplicate hashes
+PASS: interrupted copies cleaned at startup
+PASS: temporary URI permissions released
+PASS: file and database work off UI thread
+PASS: screen observer detached when stopped
+PASS: Activity callbacks cleared on destroy
+PASS: hint switch persists across launches
+PASS: sorting persists across launches
+PASS: name/transcript search wired
+PASS: rename and confirmed deletion wired
+PASS: timeline gets actual selected-record turns
+PASS: no independent hard-coded timeline intervals
+PASS: transcript gets the same record turns
+PASS: export gets the same record turns
+PASS: speaker and time edits persisted
+PASS: unprocessed export disabled
+PASS: demo export explicitly identified
+PASS: restored deleted-record state guarded
+PASS: demo password not persisted
+PASS: no destructive database upgrade fallback
+PASS: no broad file permission requests
+PASS: launcher PNG size: mdpi
+PASS: launcher PNG size: hdpi
+PASS: launcher PNG size: xhdpi
+PASS: launcher PNG size: xxhdpi
+PASS: launcher PNG size: xxxhdpi
+PASS: adaptive artwork is 432 x 432
+PASS: approved reference retained: splash_approved.png
+PASS: approved reference retained: login_approved.png
+PASS: approved reference retained: launcher_icon_approved.png
+PASS: approved reference retained: home_approved_structure.png
+PASS: approved reference retained: records_approved_structure.png
+PASS: approved reference retained: export_approved_structure.png
+PASS: approved reference retained: profile_approved_structure.png
+PASS: launcher source matches user-provided artwork byte-for-byte
+PASS: v3 version metadata
+PASS: SDK targets unchanged
+PASS: application ID unchanged
+PASS: AGP version unchanged
+PASS: Gradle version unchanged
+PASS: no unbuilt/unverified APK included
+PASS: no machine-specific SDK paths included
+PASS: Windows launcher propagates build failure status
+RESULT: 110 PASS / 0 FAIL

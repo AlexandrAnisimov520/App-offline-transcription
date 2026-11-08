@@ -1,0 +1,6 @@
+#!/bin/sh
+# BIMVO Gradle launcher. The bundled bootstrap fetches Gradle 8.10.2 as needed.
+set -e
+BASE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+cd "$BASE_DIR"
+exec java -cp "$BASE_DIR/gradle/wrapper/gradle-wrapper.jar" org.gradle.wrapper.GradleWrapperMain "$@"

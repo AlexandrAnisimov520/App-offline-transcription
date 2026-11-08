@@ -1,0 +1,80 @@
+PASS: text trimmed at boundaries
+PASS: negative ID rejected (IllegalArgumentException)
+PASS: empty speaker rejected (IllegalArgumentException)
+PASS: null speaker rejected (IllegalArgumentException)
+PASS: negative start rejected (IllegalArgumentException)
+PASS: zero interval rejected (IllegalArgumentException)
+PASS: reversed interval rejected (IllegalArgumentException)
+PASS: blank text rejected (IllegalArgumentException)
+PASS: null text rejected (IllegalArgumentException)
+PASS: text edit preserves speaker and milliseconds
+PASS: original turn remains immutable
+PASS: timing edit preserves turn ID and text
+PASS: turn equality uses actual values
+PASS: snapshot does not retain mutable input list
+PASS: turns ordered by start time
+PASS: selection uses stable ID, not row index
+PASS: unknown turn lookup is safe
+PASS: UI snapshot is immutable (UnsupportedOperationException)
+PASS: unique speakers derived from turns
+PASS: demo time axis remains one minute after trimming
+PASS: non-demo axis derived from actual turns
+PASS: Cyrillic title search ignores case
+PASS: original filename searchable
+PASS: transcript search ignores Cyrillic case
+PASS: empty search includes all records
+PASS: missing search term excluded
+PASS: unprocessed record has no invented turns
+PASS: zero timestamp
+PASS: minute rollover, not 00:60
+PASS: hour rollover
+PASS: long clock formatting
+PASS: negative display time clamped
+PASS: millisecond precision displayed
+PASS: whole-second labels stay compact
+PASS: empty transcript export rejected (IllegalArgumentException)
+PASS: unsupported export format rejected (IllegalArgumentException)
+PASS: JSON times are integer milliseconds
+PASS: export is chronologically ordered
+PASS: quotes, newline and backslash escaped
+PASS: JSON control character escaped
+PASS: Unicode surrogate pair escaped without data loss
+PASS: SRT starts at real milliseconds
+PASS: SRT has numbered separated cues
+PASS: SRT preserves speaker attribution
+PASS: TXT contains both boundaries and speaker
+PASS: copy writes exact byte count
+PASS: copy computes known SHA-256
+PASS: progress ends at actual copied length
+PASS: multi-buffer audio preserved byte-for-byte
+PASS: copy buffer never exceeds 64 KiB
+PASS: short provider reads handled correctly
+PASS: empty audio rejected (EmptyFileException)
+PASS: empty audio partial file removed
+PASS: initial cancellation honored (InterruptedIOException)
+PASS: initially cancelled copy leaves no file
+PASS: mid-copy cancellation honored (InterruptedIOException)
+PASS: mid-copy partial file removed
+PASS: provider read error propagated (IOException)
+PASS: provider error partial removed
+PASS: low-space guard rejects write (NoSpaceException)
+PASS: low-space partial file removed
+PASS: caller owns input stream lifetime
+PASS: path traversal stripped from display name
+PASS: Windows path stripped
+PASS: control and bidi characters removed
+PASS: blank filename has safe fallback
+PASS: null filename has safe fallback
+PASS: oversized filename bounded
+PASS: parent-directory filename rejected
+RESULT: 69 production-core assertions passed
+PASS: Java syntax parsed for 13 files (no Android SDK)
+PASS: exact JSON schema, integer milliseconds, UTF-8 and emoji round trip
+PASS: SQLite rejects zero interval
+PASS: SQLite rejects negative start
+PASS: SQLite rejects orphan turn
+PASS: SQLite rejects duplicate SHA-256
+PASS: SQLite newest-first ordering
+PASS: SQLite time/speaker edit is isolated to the chosen recording
+PASS: SQLite cascade deletes only the chosen record turns
+RESULT: JSON contract and 7 SQLite checks passed (host SQLite, not Android instrumentation)

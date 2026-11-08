@@ -1,0 +1,45 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    kotlinOptions { jvmTarget = '17' }
+    androidResources { noCompress += ['onnx', 'gguf'] }
+    namespace 'com.bimvo.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.bimvo.app'
+        minSdk 26
+        targetSdk 34
+        versionCode 3
+        versionName '0.3-local'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation files('libs/sherpa-onnx.aar')
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
+}
+
+tasks.named('preBuild').configure {
+    doFirst {
+        def modelDir = file('src/main/assets/asr/parakeet-600m')
+        def modelFiles = ['encoder.int8.onnx', 'decoder.int8.onnx', 'joiner.int8.onnx', 'tokens.txt']
+        if (modelFiles.any { new File(modelDir, it).length() == 0 }) {
+            throw new GradleException('Missing Parakeet 600M model files in app/src/main/assets/asr/parakeet-600m.')
+        }
+    }
+}

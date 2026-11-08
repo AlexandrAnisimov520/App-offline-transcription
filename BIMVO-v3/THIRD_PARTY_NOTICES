@@ -1,0 +1,14 @@
+Audio decoder adapted from ProtocolVoice (Apache-2.0):
+https://github.com/conwerter1/protocolvoice/tree/3e0b436a37da32265a0ae6b0f315c76ad793ab07
+Modified package and object name. Full license: LICENSE.protocolvoice.
+Sherpa-ONNX binary supplied by that repository.
+Model licensing inventory must be verified before release distribution.
+
+NVIDIA Parakeet TDT 0.6B v2 (English), CC BY 4.0.
+https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2
+https://creativecommons.org/licenses/by/4.0/
+Sherpa-ONNX int8 conversion:
+https://huggingface.co/csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8
+
+3D-Speaker CAM++ zh/en (advanced), Apache-2.0.
+https://www.modelscope.cn/models/iic/speech_campplus_sv_zh_en_16k-common_advanced/summary
