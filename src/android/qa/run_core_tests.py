@@ -11,7 +11,7 @@ def run(*command):
 with tempfile.TemporaryDirectory(prefix='bimvo-qa-') as temp:
     out=Path(temp); classes=out/'classes'; classes.mkdir()
     run('javac','-encoding','UTF-8','--release','17','-d',classes,
-        *(SRC/f'{name}.java' for name in ['Utterance','SpeakerInterval','Recording','TranscriptText','ImportFiles']),
+        *(SRC/f'{name}.java' for name in ['Utterance','Recording','TranscriptText','ImportFiles']),
         ROOT/'qa/CoreTests.java',ROOT/'qa/JavaSyntaxCheck.java')
     run('java','-cp',classes,'CoreTests',out)
     run('java','-cp',classes,'JavaSyntaxCheck',*sorted(SRC.glob('*.java')))
@@ -31,7 +31,7 @@ source=(SRC/'LibraryStore.java').read_text(encoding='utf-8')
 blocks=re.findall(r'db\.execSQL\((.*?)\);',source,re.S)
 schema=[''.join(json.loads(literal) for literal in re.findall(r'"(?:[^"\\]|\\.)*"',block)) for block in blocks]
 schema=[statement for statement in schema if statement.startswith('CREATE ')]
-assert len(schema)==7  # Four current tables plus the recordings date index; ALTER is migration-only.
+assert len(schema)==5  # Four current tables plus the recordings date index; ALTER is migration-only.
 connection=sqlite3.connect(':memory:')
 connection.execute('PRAGMA foreign_keys=ON')
 for statement in schema: connection.execute(statement)

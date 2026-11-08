@@ -4,12 +4,13 @@ import java.nio.file.StandardCopyOption
 
 plugins {
     id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
 }
 
 def sherpaAar = file('libs/sherpa-onnx-static-link-onnxruntime-2.0.1.aar')
 def bundledQwenModel = file('src/main/assets/models/Qwen3-1.7B-Q4_K_M.gguf')
-def bundleQwen = bundledQwenModel.isFile()
-if (bundleQwen && bundledQwenModel.length() != 1282439264L) {
+def bundleQwen = true
+if (bundledQwenModel.isFile() && bundledQwenModel.length() > 1024L && bundledQwenModel.length() != 1282439264L) {
     throw new GradleException('Bundled Qwen GGUF has an unexpected size')
 }
 
@@ -22,8 +23,8 @@ android {
         applicationId 'com.bimvo.app'
         minSdk 26
         targetSdk 34
-        versionCode 9
-        versionName '0.9-integrated'
+        versionCode 6
+        versionName '0.6-diarization-campp'
         buildConfigField 'boolean', 'BUNDLED_QWEN', bundleQwen.toString()
     }
 
@@ -62,6 +63,15 @@ android {
 def parakeet = 'https://huggingface.co/csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8/resolve/84b478d541cdbf0c296a7ab5f1e20a6f8f998114'
 def whisperLid = 'https://huggingface.co/csukuangfj/sherpa-onnx-whisper-tiny/resolve/65176e2deb88badc814a94058666cadccc29b61c'
 def offlineModelFiles = [
+    [name: 'Qwen3-1.7B-Q4_K_M.gguf',
+     url: 'https://huggingface.co/ggml-org/Qwen3-1.7B-GGUF/resolve/daeb8e2d528a760970442092f6bf1e55c3b659eb/Qwen3-1.7B-Q4_K_M.gguf',
+     sha: 'd2387ca2dbfee2ffabce7120d3770dadca0b293052bc2f0e138fdc940d9bc7b5', min: 1282439264L],
+    [name: 'diarization/embedding.onnx',
+     url: 'https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/3dspeaker_speech_campplus_sv_zh_en_16k-common_advanced.onnx',
+     sha: 'aa3cfc16963a10586a9393f5035d6d6b57e98d358b347f80c2a30bf4f00ceba2', min: 28_000_000L],
+    [name: 'vad/silero_vad.onnx',
+     url: 'https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad_v5.onnx',
+     sha: '6b99cbfd39246b6706f98ec13c7c50c6b299181f2474fa05cbc8046acc274396', min: 1_000_000L],
     [name: 'silero_vad.onnx',
      url: 'https://raw.githubusercontent.com/snakers4/silero-vad/60b7ffa243625ebdc1070275a29f18c87843786a/src/silero_vad/data/silero_vad.onnx',
      sha: '1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3', min: 1_000_000L],
@@ -113,7 +123,7 @@ tasks.register('ensureOfflineModels') {
                 }
                 digest.digest().collect { String.format('%02x', it & 0xff) }.join()
             }
-            def valid = { File source -> source.isFile() && source.length() > model.min &&
+            def valid = { File source -> source.isFile() && source.length() >= model.min &&
                     (!model.sha || hashFile(source).equalsIgnoreCase(model.sha)) }
             if (!valid(target)) {
                 File part = new File(target.parentFile, target.name + '.download')
@@ -149,43 +159,5 @@ tasks.configureEach { task ->
     }
 }
 
-// The archive supplies a verified portable FP32 ERes2NetV2 export; never silently build without it.
-tasks.register('verifySpeakerModel') {
-    doLast {
-        File model = file('src/main/assets/models/speaker_embedding_v2_basic.onnx')
-        if (!model.isFile() || model.length() != 71425388L)
-            throw new GradleException('Missing ERes2NetV2 speaker_embedding_v2_basic.onnx (71,425,388 bytes)')
-        MessageDigest digest = MessageDigest.getInstance('SHA-256')
-        model.withInputStream { input ->
-            byte[] buffer = new byte[65536]; int count
-            while ((count = input.read(buffer)) >= 0) if (count > 0) digest.update(buffer, 0, count)
-        }
-        String sha = digest.digest().collect { String.format('%02x', it & 0xff) }.join()
-        if (sha != '94b4e4821e227503131df2be2b59084e3a6807e624a73c49144f0cc8cf5066d9')
-            throw new GradleException('ERes2NetV2 SHA-256 mismatch')
-    }
-}
-tasks.configureEach { task ->
-    if (task.name == 'preBuild') task.dependsOn(tasks.named('verifySpeakerModel'))
-}
 
-// Candidate assets are staged from the already evaluated local models. Fail closed on mismatch.
-tasks.register('verifyDiarizationModels') {
-    doLast {
-        [
-            'segmentation.onnx': 'd582f4b4c6b48205de7e0643c57df0df5615a3c176189be3fc461e9d18827b5d',
-            'campplus_zh_en.onnx': 'aa3cfc16963a10586a9393f5035d6d6b57e98d358b347f80c2a30bf4f00ceba2'
-        ].each { name, expected ->
-            File model = file('src/main/assets/models/diarization/' + name)
-            if (!model.isFile()) throw new GradleException('Missing offline diarization model: ' + name)
-            MessageDigest digest = MessageDigest.getInstance('SHA-256')
-            model.withInputStream { input ->
-                byte[] buffer = new byte[65536]; int n
-                while ((n = input.read(buffer)) >= 0) if (n > 0) digest.update(buffer, 0, n)
-            }
-            if (digest.digest().collect { String.format('%02x', it & 0xff) }.join() != expected)
-                throw new GradleException('Diarization SHA-256 mismatch: ' + name)
-        }
-    }
-}
-tasks.named('preBuild') { dependsOn('verifyDiarizationModels') }
+android { kotlinOptions { jvmTarget = "17" } }

@@ -10,8 +10,7 @@ final class SpeakerTimelineIntervals {
         final String speaker;
         final long start;
         long end;
-        Span(Utterance turn) { this(turn.speakerId, turn.startMs, turn.endMs); }
-        Span(String speaker, long start, long end) { this.speaker = speaker; this.start = start; this.end = end; }
+        Span(Utterance turn) { speaker = turn.speakerId; start = turn.startMs; end = turn.endMs; }
     }
     static List<Span> group(List<Utterance> turns) {
         List<Utterance> sorted = new ArrayList<>(turns);

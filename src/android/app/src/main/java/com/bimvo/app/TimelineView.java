@@ -53,17 +53,6 @@ public final class TimelineView extends View {
         requestLayout();
         invalidate();
     }
-    public void setSpeakerIntervals(List<SpeakerInterval> intervals) {
-        if (intervals.isEmpty()) return; // Legacy/imported transcripts retain their original map.
-        spans = new ArrayList<>();
-        LinkedHashSet<String> ids = new LinkedHashSet<>();
-        for (SpeakerInterval s : intervals) {
-            spans.add(new SpeakerTimelineIntervals.Span(s.speakerId, s.start * 1000 / 16000, s.end * 1000 / 16000));
-            ids.add(s.speakerId); duration = Math.max(duration, s.end * 1000 / 16000);
-        }
-        speakers = new ArrayList<>(ids);
-        requestLayout(); invalidate();
-    }
     public void setOnIntervalSelected(OnIntervalSelected callback) { listener=callback; }
 
     @Override protected void onMeasure(int width,int height) {
@@ -127,7 +116,7 @@ public final class TimelineView extends View {
             long at=(long)(Math.max(0,Math.min(1,(event.getX()-left)/Math.max(1,getWidth()-dp(7)-left)))*duration);
             Utterance nearest=null;
             long distance=Long.MAX_VALUE;
-            for (Utterance u:turns) if (u.speakerId.equals(speakers.get(row)) || "speaker_unknown".equals(u.speakerId)) {
+            for (Utterance u:turns) if (u.speakerId.equals(speakers.get(row))) {
                 long gap=Math.max(0,Math.max(u.startMs-at,at-u.endMs));
                 if (gap<distance) { nearest=u; distance=gap; }
             }

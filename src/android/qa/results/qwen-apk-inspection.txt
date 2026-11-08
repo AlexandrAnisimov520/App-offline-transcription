@@ -1,0 +1,6 @@
+PASS: ARM64 ELF with 16 KiB-compatible LOAD alignment: lib/arm64-v8a/libbimvo_llama.so
+PASS: all four JNI entry-point names present
+PASS: ARM64 ELF with 16 KiB-compatible LOAD alignment: lib/arm64-v8a/libc++_shared.so
+PASS: no model weights bundled into APK
+RESULT: APK payload inspected; device execution remains untested
+

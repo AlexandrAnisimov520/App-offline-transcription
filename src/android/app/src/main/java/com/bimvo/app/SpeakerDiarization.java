@@ -11,7 +11,7 @@ import java.util.function.BooleanSupplier;
 /** VAD -> overlapping analysis windows -> global labels -> disjoint speaker-aware ASR chunks. */
 final class SpeakerDiarization {
     interface Progress { void update(String stage, int percent); }
-    static final String VERSION = "sherpa-cam070-preserved-asr-v1";
+    static final String VERSION = "diarization-campp-v1";
 
     static List<SpeakerClustering.Window> windows(List<long[]> speech) {
         List<SpeakerClustering.Window> result = new ArrayList<>();
@@ -44,34 +44,10 @@ final class SpeakerDiarization {
         for (int i = 0; i < wave.length; i++) wave[i] = (short)((bytes[2 * i] & 255) | (bytes[2 * i + 1] << 8)) / 32768f;
         return wave;
     }
-    static DiarizationResult diarize(Context context, File pcm, BooleanSupplier cancelled, Progress progress) throws Exception {
-        List<SpeakerInterval> intervals = NativeSpeakerDiarization.run(context, pcm, cancelled, progress);
-        // Compatibility stage: retain the previous ASR cuts until RU/EN WER validates a replacement.
-        // Legacy labels are discarded. Native global intervals alone define final speaker IDs.
-        return new DiarizationResult(intervals, plan(context, pcm, cancelled, progress));
-    }
     static List<ChunkPlanner.Chunk> plan(Context context, File pcm, BooleanSupplier cancelled, Progress progress) throws Exception {
-        List<long[]> speech = SileroVad.findSpeech(context, pcm, cancelled, percent -> progress.update("vad", 15 + percent * 14 / 100));
-        SpeakerClustering.check(cancelled);
-        List<SpeakerClustering.Window> windows = windows(speech);
-        if (windows.isEmpty()) throw new IOException("Р’ Р·Р°РїРёСЃРё РЅРµ РѕР±РЅР°СЂСѓР¶РµРЅР° СЂРµС‡СЊ");
-        try (RandomAccessFile file = new RandomAccessFile(pcm, "r"); SpeakerEmbedding model = new SpeakerEmbedding(context)) {
-            int last = -1;
-            for (int i = 0; i < windows.size(); i++) {
-                SpeakerClustering.check(cancelled);
-                SpeakerClustering.Window window = windows.get(i);
-                if (window.end - window.start >= 4000) window.embedding = model.embedding(read(file, window.start, window.end));
-                int percent = 30 + 24 * (i + 1) / windows.size();
-                if (percent != last) { progress.update("speakers", percent); last = percent; }
-            }
-        }
-        SpeakerClustering.check(cancelled);
-        progress.update("clustering", 55);
-        SpeakerClustering.cluster(windows, cancelled);
-        List<ChunkPlanner.Chunk> result = chunks(windows);
-        if (result.isEmpty()) throw new IOException("РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕРґРіРѕС‚РѕРІРёС‚СЊ СЂРµС‡РµРІС‹Рµ С„СЂР°РіРјРµРЅС‚С‹");
-        return result;
+        return DiarizationBridge.plan(context, pcm, cancelled, progress);
     }
+
     static List<ChunkPlanner.Chunk> chunks(List<SpeakerClustering.Window> windows) {
         List<ChunkPlanner.Chunk> result = new ArrayList<>();
         long start = -1, end = -1; int label = -1;

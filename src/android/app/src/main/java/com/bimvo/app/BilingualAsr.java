@@ -22,7 +22,7 @@ import java.util.function.BooleanSupplier;
 
 /** Routes speaker-aware chunks offline. The language detector closes before ASR model allocation. */
 final class BilingualAsr implements AutoCloseable {
-    static final String MODEL_VERSION = "GigaAM-v3+Parakeet-600M-v2+Whisper-LID+SherpaCAM070";
+    static final String MODEL_VERSION = "GigaAM-v3+Parakeet-600M-v2+Whisper-LID+External diarization-CAM++";
     private static final String PLAN = SpeakerDiarization.VERSION + "+lid-v1:";
     private static final String RU = PLAN + "ru";
     private static final String EN = PLAN + "en";
@@ -68,12 +68,6 @@ final class BilingualAsr implements AutoCloseable {
 
     static List<ChunkPlanner.Chunk> assignLanguages(Context context, RandomAccessFile audio,
             List<ChunkPlanner.Chunk> chunks, BooleanSupplier cancelled) throws IOException {
-        return assignLanguages(context, audio, chunks, cancelled, AsrLanguage.AUTO);
-    }
-    static List<ChunkPlanner.Chunk> assignLanguages(Context context, RandomAccessFile audio,
-            List<ChunkPlanner.Chunk> chunks, BooleanSupplier cancelled, AsrLanguage mode) throws IOException {
-        SpeakerClustering.check(cancelled);
-        if (mode != AsrLanguage.AUTO) return mode.force(chunks, RU, EN);
         AssetManager assets = context.getAssets();
         SpokenLanguageIdentificationWhisperConfig model = new SpokenLanguageIdentificationWhisperConfig();
         model.setEncoder(requireAsset(assets, LID_ASSETS + "tiny-encoder.int8.onnx"));
@@ -137,11 +131,15 @@ final class BilingualAsr implements AutoCloseable {
     }
 
     String transcribe(RandomAccessFile audio, ChunkPlanner.Chunk chunk) throws IOException {
+        return transcribeDetailed(audio, chunk).getText();
+    }
+    com.bimvo.app.diarization.AsrResult transcribeDetailed(RandomAccessFile audio, ChunkPlanner.Chunk chunk) throws IOException {
         OfflineStream stream = recognizer.createStream();
         try {
             stream.acceptWaveform(AudioDecoder.readPcm(audio, chunk.start, chunk.end), RATE);
             recognizer.decode(stream);
-            return recognizer.getResult(stream).getText().trim();
+            var result = recognizer.getResult(stream);
+            return new com.bimvo.app.diarization.AsrResult(result.getText().trim(), result.getTokens(), result.getTimestamps());
         } finally {
             stream.release();
         }

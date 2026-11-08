@@ -57,24 +57,6 @@ public final class TranscriptText {
         return result.toString();
     }
 
-    /** Separate schema: raw speaker activity, including overlaps; not invented ASR text. */
-    public static String speakerJson(Recording recording) {
-        if (recording.speakerIntervals.isEmpty()) throw new IllegalArgumentException("No diarization intervals");
-        StringBuilder out = new StringBuilder("{\n  \"schema\": \"bimvo-speaker-intervals-v1\",\n  \"sample_rate\": 16000,\n  \"audio_sha256\": ");
-        out.append(recording.sha256 == null ? "null" : quote(recording.sha256));
-        out.append(",\n  \"speaker_intervals\": [\n");
-        int n = 0;
-        for (SpeakerInterval s : recording.speakerIntervals) {
-            if (n++ > 0) out.append(",\n");
-            out.append("    {\"speaker_id\": ").append(quote(s.speakerId))
-                .append(", \"start_sample\": ").append(s.start)
-                .append(", \"end_sample\": ").append(s.end)
-                .append(", \"start_ms\": ").append(s.start * 1000 / 16000)
-                .append(", \"end_ms\": ").append(s.end * 1000 / 16000).append('}');
-        }
-        return out.append("\n  ]\n}\n").toString();
-    }
-
     /** JSON escaping kept here so the exact export can be tested on a plain JDK. */
     private static String quote(String input) {
         StringBuilder out = new StringBuilder("\"");

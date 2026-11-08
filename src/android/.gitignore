@@ -1,0 +1,13 @@
+.gradle/
+.idea/
+local.properties
+build/
+app/build/
+*.iml
+captures/
+.externalNativeBuild/
+
+/app/libs/sherpa-onnx-static-link-onnxruntime-2.0.1.aar*
+/app/src/main/assets/models/parakeet-600m/
+/app/src/main/assets/models/whisper-lid/
+/app/src/main/assets/models/speaker_embedding_v2_basic.onnx

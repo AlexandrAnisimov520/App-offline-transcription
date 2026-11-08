@@ -32,7 +32,7 @@
     <string name="benefit_personal_2_detail">По временным меткам проще найти нужную реплику.</string>
     <string name="benefit_personal_3">Ваша память, ваш телефон</string>
     <string name="benefit_personal_3_detail">Импортированные файлы сохраняются в приложении, без отправки на сервер.</string>
-    <string name="capability_notice">Запись, расшифровка и конспекты работают на устройстве.</string>
+    <string name="capability_notice">Аудио распознаётся на устройстве. Готовая расшифровка содержит говорящих и временные метки.</string>
     <string name="library_loading">Открываем библиотеку…</string>
     <string name="library_load_failed">Не удалось открыть библиотеку. Ваши файлы не удалены. Перезапустите приложение.</string>
     <string name="library_demo_count">Включая %1$d демопримера</string>
@@ -63,7 +63,7 @@
     <string name="import_failed">Не удалось сохранить файл. Проверьте свободное место и попробуйте снова.</string>
     <string name="import_duplicate">Это аудио уже есть в библиотеке. Вторая копия не создана.</string>
     <string name="picker_missing">На устройстве недоступно системное окно выбора файла.</string>
-    <string name="file_saved_notice">Файл сохранён локально. Расшифровки и говорящих пока нет: модели обработки не подключены.</string>
+    <string name="file_saved_notice">Аудио сохранено. Обработка запускается автоматически.</string>
     <string name="file_missing_notice">Копия аудио не найдена. Удалите эту запись и импортируйте исходный файл снова.</string>
     <string name="file_name_label">Исходный файл</string>
     <string name="file_size_label">Размер</string>
@@ -87,7 +87,7 @@
     <string name="search_hint">Поиск по названию и тексту</string>
     <string name="search_empty">Ничего не найдено</string>
     <string name="search_empty_detail">Попробуйте другое название или слово из готовой расшифровки.</string>
-    <string name="records_subtitle">Сохранённое аудио и демопримеры</string>
+    <string name="records_subtitle">Ваши сохранённые записи</string>
     <string name="demo_explanation">Демозаписи отдельно помечены. Импортированному аудио не подставляется пример текста.</string>
     <string name="demo_fragment">Демофрагмент %1$s · участников: %2$d</string>
     <string name="demo_notice">ДЕМО: без звука и распознавания</string>
@@ -107,10 +107,10 @@
     <string name="voice_record_start_failed">Не удалось начать запись. Проверьте доступ к микрофону.</string>
     <string name="voice_record_save_failed">Не удалось сохранить запись. Проверьте свободную память.</string>
     <string name="voice_record_permission_denied">Для записи разрешите доступ к микрофону в настройках Android.</string>
-    <string name="recorder_notice">Запись с микрофона сохраняется в журнале BIMVO. Распознавание подключается отдельно.</string>
+    <string name="recorder_notice">После сохранения запись автоматически отправляется на расшифровку.</string>
     <string name="privacy_updated">Вы сами выбираете файл. BIMVO сохраняет его локальную копию и не использует интернет. При удалении приложения его копии файлов удаляются.</string>
-    <string name="about_updated">BIMVO — запись, расшифровка и конспекты без интернета.\n\nРусская речь — GigaAM-v3. Английская речь — Parakeet 600M INT8. Говорящие и время реплик определяются локально.\n\nQwen3 создаёт конспект по готовой расшифровке.\n\nЗаписи можно переименовывать, сортировать, удалять и сохранять отдельным аудиофайлом. Доступны перемотка, карта диалога и экспорт текста.\n\nДемопримеры открываются отдельно в профиле устройства.</string>
-    <string name="about_version">BIMVO 0.3</string>
+    <string name="about_updated">BIMVO — запись и расшифровка разговоров на устройстве.\n\nРусская речь: GigaAM-v3 E2E CTC. Английская речь: Parakeet 600M v2. Язык определяется автоматически с помощью Whisper.\n\nSilero VAD находит речевые участки. CAM++ и глобальная кластеризация разделяют говорящих. Реплики связаны с временными метками и плеером.\n\nQwen3 создаёт конспект по готовой расшифровке. Доступен экспорт TXT, SRT и JSON.\n\nЗаписи и обработка остаются на устройстве. Демопримеры находятся в отдельном разделе.</string>
+    <string name="about_version">BIMVO 0.6</string>
     <string name="demo_team">Встреча команды</string>
     <string name="demo_interview">Интервью</string>
     <string name="demo_project">Обсуждение проекта</string>
@@ -122,7 +122,7 @@
     <string name="demo_interview_3">Понятно. Значит, важно быстро находить реплику и видеть, кто её произнёс.</string>
     <string name="demo_project_1">Давайте проверим, что каждый этап проекта готов к демонстрации.</string>
     <string name="demo_project_2">Импорт сохраняет файлы на устройстве. Даже после перезапуска они есть в библиотеке.</string>
-    <string name="demo_project_3">Интерфейс готов. Модели распознавания и диаризации нужно подключить отдельно.</string>
+    <string name="demo_project_3">После обработки можно проверить текст, говорящих и границы реплик.</string>
     <string name="demo_project_4">Договорились. В демонстрации честно разделим готовые функции и примеры.</string>
     <string name="sort_newest">По дате · новые</string>
     <string name="sort_oldest">По дате · старые</string>
@@ -175,9 +175,4 @@
     <string name="demo_stages">Пример этапов</string>
     <string name="demo_progress_title">Демонстрационный прогресс</string>
     <string name="demo_progress_note">Не измеряет скорость распознавания</string>
-    <string name="source_rename_done">Имя исходного файла обновлено</string>
-    <string name="source_rename_wrong_file">Выбран другой файл. Исходный файл не изменён.</string>
-    <string name="source_rename_not_allowed">Этот файловый провайдер не разрешает переименование. Можно сохранить аудиофайл с новым именем.</string>
-    <string name="source_rename_failed">Не удалось переименовать исходный файл</string>
-    <string name="audio_export_done">Аудиофайл сохранён</string>
 </resources>

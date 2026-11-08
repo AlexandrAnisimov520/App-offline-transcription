@@ -14,18 +14,10 @@ public final class Recording {
     public final long sizeBytes, durationMs, createdAt;
     public final boolean demo;
     public final List<Utterance> transcript;
-    public final List<SpeakerInterval> speakerIntervals;
 
     public Recording(String id, String title, String originalName, String storedName,
                      String mimeType, String sha256, long sizeBytes, long durationMs,
                      long createdAt, boolean demo, List<Utterance> transcript) {
-        this(id, title, originalName, storedName, mimeType, sha256, sizeBytes, durationMs,
-                createdAt, demo, transcript, Collections.emptyList());
-    }
-    public Recording(String id, String title, String originalName, String storedName,
-                     String mimeType, String sha256, long sizeBytes, long durationMs,
-                     long createdAt, boolean demo, List<Utterance> transcript, List<SpeakerInterval> intervals) {
-        this.speakerIntervals = Collections.unmodifiableList(new ArrayList<>(intervals));
         this.id = id;
         this.title = title;
         this.originalName = originalName;
@@ -48,8 +40,7 @@ public final class Recording {
 
     public List<String> speakers() {
         Set<String> ids = new LinkedHashSet<>();
-        if (speakerIntervals.isEmpty()) for (Utterance u : transcript) ids.add(u.speakerId);
-        else for (SpeakerInterval interval : speakerIntervals) ids.add(interval.speakerId);
+        for (Utterance u : transcript) ids.add(u.speakerId);
         return new ArrayList<>(ids);
     }
 

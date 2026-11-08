@@ -44,6 +44,9 @@ final class GigaAmE2eCtc implements AutoCloseable {
     }
 
     String transcribe(RandomAccessFile audio, ChunkPlanner.Chunk chunk) throws Exception {
+        return transcribeDetailed(audio, chunk).getText();
+    }
+    com.bimvo.app.diarization.AsrResult transcribeDetailed(RandomAccessFile audio, ChunkPlanner.Chunk chunk) throws Exception {
         float[] signal = AudioDecoder.readPcm(audio, chunk.start, chunk.end);
         float[][] features = GigaamFeatures.extract(signal);
         int frames = features[0].length;
@@ -56,16 +59,28 @@ final class GigaAmE2eCtc implements AutoCloseable {
                 float[][][] probabilities = (float[][][]) result.get("log_probs")
                         .orElseThrow(() -> new IOException("GigaAM log_probs missing")).getValue();
                 StringBuilder sentence = new StringBuilder();
+                java.util.List<String> tokens = new java.util.ArrayList<>();
+                java.util.List<Float> times = new java.util.ArrayList<>();
+                int frameIndex = 0;
                 int prev = 256;
                 for (float[] row : probabilities[0]) {
                     int best = 0;
                     for (int i = 1; i < row.length; i++) if (row[i] > row[best]) best = i;
                     if (best != 256 && best != prev && best < vocabulary.length && vocabulary[best] != null
                             && best != 0 && !vocabulary[best].startsWith("<"))
+                    {
                         sentence.append(vocabulary[best]);
+                        tokens.add(vocabulary[best]);
+                        // Same frame-time mapping as GigaAM compute_frame_shift(audio_samples, output_frames).
+                        times.add(Math.min(signal.length / 16000f, frameIndex * (signal.length / 16000f / probabilities[0].length)));
+                    }
+                    frameIndex++;
                     prev = best;
                 }
-                return sentence.toString().replace('▁', ' ').trim();
+                float[] timestamps = new float[times.size()];
+                for (int i = 0; i < timestamps.length; i++) timestamps[i] = times.get(i);
+                return new com.bimvo.app.diarization.AsrResult(sentence.toString().replace('▁', ' ').trim(),
+                        tokens.toArray(new String[0]), timestamps);
             }
         }
     }

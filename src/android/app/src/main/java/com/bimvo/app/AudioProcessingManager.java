@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-/** Serial VAD->speaker embedding->global clustering->speaker-aware ASR pipeline; no network, no fake result, restartable on persistent chunk boundaries. */
+/** Local VAD -> resumable RU/EN ASR -> CAM++ global clustering -> word-aligned speaker turns. */
 final class AudioProcessingManager {
     private final BimvoApplication application;
     private final LibraryStore store;
@@ -58,60 +58,65 @@ final class AudioProcessingManager {
             report(id,"prepare", 0);
             Recording record = null;
             for (Recording r : store.load()) if (r.id.equals(id) && !r.demo) { record = r; break; }
-            if (record == null) throw new IOException("Р—Р°РїРёСЃСЊ РЅРµ РЅР°Р№РґРµРЅР°");
+            if (record == null) throw new IOException("Запись не найдена");
             File original = store.audioFile(record);
-            if (!original.isFile()) throw new IOException("РћСЂРёРіРёРЅР°Р»СЊРЅС‹Р№ Р°СѓРґРёРѕС„Р°Р№Р» РѕС‚СЃСѓС‚СЃС‚РІСѓРµС‚");
+            if (!original.isFile()) throw new IOException("Оригинальный аудиофайл отсутствует");
             File pcm = store.processingFile(id);
             if (!pcm.getParentFile().isDirectory() && !pcm.getParentFile().mkdirs())
-                throw new IOException("РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ СЂР°Р±РѕС‡СѓСЋ РїР°РїРєСѓ");
+                throw new IOException("Не удалось создать рабочую папку");
             if (pcm.isFile() && (pcm.length() < 640 || (pcm.length() & 1) != 0)) pcm.delete();
             if (!pcm.isFile()) {
                 if (original.length() * 8L > pcm.getParentFile().getUsableSpace() &&
                         pcm.getParentFile().getUsableSpace() < 32L * 1024 * 1024)
-                    throw new IOException("РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ РјРµСЃС‚Р° РґР»СЏ РѕР±СЂР°Р±РѕС‚РєРё Р°СѓРґРёРѕ");
+                    throw new IOException("Недостаточно места для обработки аудио");
                 final int[] last = {-1};
-                AudioDecoder.decode(original, pcm, cancelled::get, percent -> {
+                File decoded = new File(pcm.getPath() + ".decoded");
+                AudioDecoder.decode(original, decoded, cancelled::get, percent -> {
                     int value = Math.min(14, percent * 14 / 100);
                     if (value != last[0]) { report(id,"decode", value); last[0] = value; }
                 });
+                DiarizationPcm.normalize(decoded, pcm, cancelled::get);
+                decoded.delete();
             }
             checkCancel();
             long totalSamples = pcm.length() / 2;
-            if (totalSamples < 320) throw new IOException("РЎР»РёС€РєРѕРј РєРѕСЂРѕС‚РєР°СЏ Р°СѓРґРёРѕР·Р°РїРёСЃСЊ");
+            if (totalSamples < 320) throw new IOException("Слишком короткая аудиозапись");
             List<ChunkPlanner.Chunk> parts = store.chunks(id);
             if (!parts.isEmpty() && (parts.get(parts.size()-1).end > totalSamples ||
                     parts.stream().anyMatch(chunk -> !BilingualAsr.hasLanguage(chunk)))) parts = Collections.emptyList();
             if (parts.isEmpty()) {
-                DiarizationResult diarization = SpeakerDiarization.diarize(application, pcm, cancelled::get, (stage, percent) -> report(id, stage, percent));
-                parts = diarization.original;
-                report(id, "language", 56);
+                parts = SpeakerDiarization.plan(application, pcm, cancelled::get, (stage, percent) -> report(id, stage, percent));
+                report(id, "language", 29);
                 try (RandomAccessFile audio = new RandomAccessFile(pcm, "r")) {
-                    parts = BilingualAsr.assignLanguages(application, audio, parts, cancelled::get, application.jobAsrLanguage(id));
+                    parts = BilingualAsr.assignLanguages(application, audio, parts, cancelled::get);
                 }
                 checkCancel();
-                parts = new DiarizationResult(diarization.intervals, parts).chunks;
-                store.setChunkPlan(id, parts, diarization.intervals);
+                store.setChunkPlan(id, parts);
             }
-            report(id,"asr", Math.max(60, store.job(id).percent));
+            report(id,"asr", 30);
             Set<Integer> done = store.completedChunks(id);
             if (done.size() != parts.size()) {
                 try (RandomAccessFile audio = new RandomAccessFile(pcm, "r")) {
                     if (parts.stream().anyMatch(chunk -> !done.contains(chunk.index) && !BilingualAsr.isEnglish(chunk))) {
                         checkCancel();
                         try (GigaAmE2eCtc russian = new GigaAmE2eCtc(application)) {
-                            transcribe(id, audio, parts, done, false, russian::transcribe);
+                            transcribe(id, audio, parts, done, false, russian::transcribeDetailed);
                         }
                     }
                     if (parts.stream().anyMatch(chunk -> !done.contains(chunk.index) && BilingualAsr.isEnglish(chunk))) {
                         checkCancel();
                         try (BilingualAsr english = new BilingualAsr(application)) {
-                            transcribe(id, audio, parts, done, true, english::transcribe);
+                            transcribe(id, audio, parts, done, true, english::transcribeDetailed);
                         }
                     }
                 }
             }
             checkCancel();
-            store.completeAudioJob(id);
+            report(id, "speakers", 70);
+            List<Utterance> turns = DiarizationBridge.diarize(application, pcm, parts, store.alignedWords(id),
+                    cancelled::get, (stage, percent) -> report(id, stage, percent));
+            checkCancel();
+            store.completeDiarizedJob(id, turns);
             application.reportProcessing(id,store.job(id),true);
             pcm.delete(); // Original is never deleted; PCM can be regenerated for later models.
         } catch (InterruptedIOException e) {
@@ -121,7 +126,7 @@ final class AudioProcessingManager {
         } catch (Exception | LinkageError error) {
             Log.e("BIMVO", "Offline transcription failed", error);
             LibraryStore.Job previous = store.job(id);
-            String message = error.getMessage() == null ? "РћС€РёР±РєР° Р»РѕРєР°Р»СЊРЅРѕРіРѕ СЂР°СЃРїРѕР·РЅР°РІР°РЅРёСЏ" : error.getMessage();
+            String message = error.getMessage() == null ? "Ошибка локального распознавания" : error.getMessage();
             store.updateJob(id,"failed","failed",previous == null ? 0 : previous.percent,message);
             application.reportProcessing(id,store.job(id),true);
         }
@@ -129,7 +134,7 @@ final class AudioProcessingManager {
 
     @FunctionalInterface
     private interface Recognizer {
-        String transcribe(RandomAccessFile audio, ChunkPlanner.Chunk chunk) throws Exception;
+        com.bimvo.app.diarization.AsrResult transcribe(RandomAccessFile audio, ChunkPlanner.Chunk chunk) throws Exception;
     }
 
     private void transcribe(String id, RandomAccessFile audio, List<ChunkPlanner.Chunk> parts,
@@ -137,15 +142,19 @@ final class AudioProcessingManager {
         for (ChunkPlanner.Chunk chunk : parts) {
             if (done.contains(chunk.index) || BilingualAsr.isEnglish(chunk) != english) continue;
             checkCancel();
-            String text = recognizer.transcribe(audio, chunk);
+            // 100 ms acoustic context; stored speech boundaries stay unchanged.
+            ChunkPlanner.Chunk recognitionChunk = new ChunkPlanner.Chunk(chunk.index,
+                    Math.max(0, chunk.start - 1600), Math.min(audio.length() / 2, chunk.end + 1600),
+                    chunk.reason, chunk.speakerId);
+            com.bimvo.app.diarization.AsrResult result = recognizer.transcribe(audio, recognitionChunk);
             checkCancel();
-            store.finishChunk(id, chunk, text);
+            store.finishChunk(id, chunk, result.getText(), DiarizationBridge.encodeWords(result, recognitionChunk.start, recognitionChunk.end));
             application.reportProcessing(id, store.job(id), true);
         }
     }
 
     private void checkCancel() throws InterruptedIOException {
         if (cancelled.get() || Thread.currentThread().isInterrupted())
-            throw new InterruptedIOException("РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РѕС‚РјРµРЅРёР» РѕР±СЂР°Р±РѕС‚РєСѓ");
+            throw new InterruptedIOException("Пользователь отменил обработку");
     }
 }

@@ -97,24 +97,11 @@ public final class BimvoApplication extends Application {
     LibraryStore.Job processingJob(String id) { return processingJobs.get(id); }
     boolean isProcessing(String id) { return processing.isRunning(id); }
 
-    AsrLanguage preferredAsrLanguage() {
-        return AsrLanguage.parse(getSharedPreferences("asr-routing-v1",0).getString("preferred","AUTO"));
-    }
-    boolean setPreferredAsrLanguage(AsrLanguage language) {
-        return getSharedPreferences("asr-routing-v1",0).edit().putString("preferred",language.name()).commit();
-    }
-    AsrLanguage jobAsrLanguage(String id) {
-        return AsrLanguage.parse(getSharedPreferences("asr-routing-v1",0).getString("job:"+id,"AUTO"));
-    }
-
     boolean requestProcessing(String id) {
         Recording record = find(id);
         if (record == null || record.demo || !ready) return false;
         LibraryStore.Job job = processingJob(id);
         if (job != null && (job.active() || "complete".equals(job.status))) return false;
-        android.content.SharedPreferences routing=getSharedPreferences("asr-routing-v1",0);
-        if(!routing.contains("job:"+id) && !routing.edit().putString("job:"+id,
-                (job==null ? preferredAsrLanguage() : AsrLanguage.AUTO).name()).commit())return false;
         try { AudioProcessingService.start(this,id); return true; }
         catch (RuntimeException e) {
             android.util.Log.e("BIMVO","Unable to start foreground processing",e);
@@ -126,7 +113,7 @@ public final class BimvoApplication extends Application {
         Recording record = find(id);
         if (record == null || record.demo || processing.isRunning(id) || !begin(Operation.WRITE)) return false;
         io.execute(() -> {
-            try { store.resetAudioJob(id); getSharedPreferences("asr-routing-v1",0).edit().remove("job:"+id).commit(); finishOperation(R.string.changes_saved, id); }
+            try { store.resetAudioJob(id); finishOperation(R.string.changes_saved, id); }
             catch (Exception e) { android.util.Log.e("BIMVO", "Cannot restart audio job", e); finishOperation(R.string.operation_failed, ""); }
         });
         return true;
@@ -336,37 +323,11 @@ public final class BimvoApplication extends Application {
         return true;
     }
 
-    boolean renameOriginalDocument(String id, Uri uri) {
-        Recording recording=find(id);
-        if(recording==null || recording.demo || !begin(Operation.WRITE))return false;
-        io.execute(()->{
-            int message=R.string.source_rename_done;
-            try { OriginalDocumentRename.rename(this,uri,recording); }
-            catch(SourceFileIdentity.Mismatch e){message=R.string.source_rename_wrong_file;}
-            catch(OriginalDocumentRename.Unsupported | SecurityException e){message=R.string.source_rename_not_allowed;}
-            catch(Exception e){android.util.Log.e("BIMVO","Source rename failed",e);message=R.string.source_rename_failed;}
-            finishOperation(message,"");
-        });
-        return true;
+    boolean rename(String id, String name) {
+        Recording record = find(id);
+        if (record == null || record.demo || processing.isRunning(id)) return false;
+        return write(() -> store.rename(id, name), R.string.changes_saved);
     }
-    boolean saveAudioFile(String id, Uri destination) {
-        Recording recording=find(id);
-        if(recording==null || recording.demo || !begin(Operation.EXPORT))return false;
-        io.execute(()->{
-            int message=R.string.audio_export_done;
-            try (FileInputStream input=new FileInputStream(store.audioFile(recording));
-                 OutputStream output=getContentResolver().openOutputStream(destination,"wt")) {
-                if(output==null)throw new IOException("Audio destination unavailable");
-                byte[] buffer=new byte[65536];int n;
-                while((n=input.read(buffer))!=-1)output.write(buffer,0,n);
-                output.flush();
-            }catch(Exception e){android.util.Log.e("BIMVO","Audio export failed",e);message=R.string.export_failed;}
-            finishOperation(message,"");
-        });
-        return true;
-    }
-
-    boolean rename(String id, String name) { return write(() -> store.rename(id, name), R.string.changes_saved); }
     boolean delete(Recording r) {
         if (processing.isRunning(r.id)) return false;
         return write(() -> store.delete(r), R.string.record_removed);
@@ -383,15 +344,14 @@ public final class BimvoApplication extends Application {
             try {
                 if (!file.getParentFile().isDirectory() && !file.getParentFile().mkdirs())
                     throw new IOException("Export directory unavailable");
-                byte[] bytes = (format.equals("SPEAKERS") ? TranscriptText.speakerJson(recording)
-                        : TranscriptText.format(recording.transcript, format)).getBytes(StandardCharsets.UTF_8);
+                byte[] bytes = TranscriptText.format(recording.transcript, format).getBytes(StandardCharsets.UTF_8);
                 try (FileOutputStream output = new FileOutputStream(file)) {
                     output.write(bytes);
                     output.getFD().sync();
                 }
                 String title = ImportFiles.safeDisplayName(recording.title).replaceAll("[\\\\/:*?\"<>|]", "_");
-                String name = (recording.demo ? "DEMO_" : "") + title + "." + (format.equals("SPEAKERS") ? "speakers.json" : format.toLowerCase(Locale.ROOT));
-                String mime = (format.equals("JSON") || format.equals("SPEAKERS")) ? "application/json"
+                String name = (recording.demo ? "DEMO_" : "") + title + "." + format.toLowerCase(Locale.ROOT);
+                String mime = format.equals("JSON") ? "application/json"
                         : format.equals("SRT") ? "application/x-subrip" : "text/plain";
                 main.post(() -> {
                     operation = Operation.NONE;
