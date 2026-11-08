@@ -1,0 +1,109 @@
+{
+  "veche": {
+    "der": {
+      "der": 0.20918732390119388,
+      "miss_seconds": 15.728695028305083,
+      "false_alarm_seconds": 3.858488823041224,
+      "confusion_seconds": 40.23076816749571,
+      "reference_speaker_seconds": 285.9540000000001,
+      "reference_speakers": 3,
+      "predicted_speakers": 4,
+      "dominant_turns": 87,
+      "reference_turns": 89,
+      "merge_pairs": 398,
+      "predicted_same_pairs": 1290,
+      "split_pairs": 327,
+      "reference_same_pairs": 1219,
+      "short_correct": 3,
+      "short_total": 5,
+      "return_correct": 0,
+      "return_total": 0,
+      "mapping": {
+        "speaker_4": "ref_1",
+        "speaker_2": "ref_2",
+        "speaker_3": "ref_3"
+      }
+    },
+    "diagnostics": {
+      "jer": 0.2835594859683722,
+      "vad_precision": 0.9890952997674595,
+      "vad_recall": 0.9626523898389302,
+      "vad_f1": 0.9756947162485123,
+      "reference_speech_union_seconds": 274.2610000000001,
+      "hypothesis_speech_union_seconds": 266.9287854786962,
+      "reference_overlap_seconds": 11.69300000000003,
+      "overlap_precision": 0.8675458654834335,
+      "overlap_recall": 0.5308558866056704,
+      "note": "JER averages reference-speaker IoU error after optimal assignment; inspect with DER because unmatched extra hypothesis speakers are not separately penalized. VAD metrics use binary speech union; overlap requires >=2 concurrent speaker labels."
+    },
+    "matches_saved_predictions": true
+  },
+  "ami": {
+    "audio": "D:\\BIMVO-AMI\\TS3004a.wav",
+    "duration": 300.0,
+    "threshold": 0.85,
+    "num_clusters": -1,
+    "seconds": 108.54693730000872,
+    "rtf": 0.3618231243333624,
+    "speakers": 16,
+    "segments": 62,
+    "backend": "sherpa-onnx 2.0.1",
+    "metrics": {
+      "segments": {
+        "der": 0.3279218371882583,
+        "miss_seconds": 36.98346072387693,
+        "false_alarm_seconds": 3.1910761489867614,
+        "confusion_seconds": 34.582788116455134,
+        "reference_speaker_seconds": 227.97300000000004,
+        "reference_speakers": 4,
+        "predicted_speakers": 16,
+        "dominant_turns": 54,
+        "reference_turns": 64,
+        "merge_pairs": 141,
+        "predicted_same_pairs": 248,
+        "split_pairs": 275,
+        "reference_same_pairs": 382,
+        "short_correct": 2,
+        "short_total": 28,
+        "return_correct": 1,
+        "return_total": 3,
+        "mapping": {
+          "speaker_3": "AMI_A",
+          "speaker_10": "AMI_B",
+          "speaker_8": "AMI_C",
+          "speaker_12": "AMI_D"
+        }
+      },
+      "words": {
+        "der": 0.2777665671912338,
+        "miss_seconds": 16.19553329467774,
+        "false_alarm_seconds": 8.836148719787676,
+        "confusion_seconds": 30.949391937255825,
+        "reference_speaker_seconds": 201.53999999999994,
+        "reference_speakers": 4,
+        "predicted_speakers": 16,
+        "dominant_turns": 50,
+        "reference_turns": 57,
+        "merge_pairs": 93,
+        "predicted_same_pairs": 222,
+        "split_pairs": 213,
+        "reference_same_pairs": 342,
+        "short_correct": 3,
+        "short_total": 26,
+        "return_correct": 2,
+        "return_total": 6,
+        "mapping": {
+          "speaker_3": "AMI_A",
+          "speaker_10": "AMI_B",
+          "speaker_8": "AMI_C",
+          "speaker_12": "AMI_D"
+        }
+      }
+    },
+    "protocol": "zero collar; overlaps included; optimal global mapping; full supplied audio extent",
+    "hashes": {
+      "app/src/main/assets/models/diarization/eres2net_voxceleb.onnx": "c59158379255ad66e161679cca6af8d52d51e389e3224ab7d7a7baae295c2db5",
+      "app/src/main/assets/models/diarization/segmentation.onnx": "d582f4b4c6b48205de7e0643c57df0df5615a3c176189be3fc461e9d18827b5d"
+    }
+  }
+}

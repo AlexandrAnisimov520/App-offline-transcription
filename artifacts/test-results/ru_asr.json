@@ -1,0 +1,15 @@
+{
+  "scope": "Desktop CPU, production Java features + Python ONNX runtime; not Android JNI",
+  "audio": "clean_01 first 10s",
+  "text": "Сегодня у меня довольно много дел. Сначала нужно закончить домашнее задание, затем сходить в магазин и забрать посылку. После обеда",
+  "frames": 999,
+  "unchanged_from_HEAD": [
+    "GigaAmE2eCtc.java",
+    "GigaamFeatures.java",
+    "AudioDecoder.java",
+    "PcmResampler.java",
+    "ChunkPlanner.java"
+  ],
+  "wer": null,
+  "note": "No independent timed transcript for this crop; no invented WER."
+}
