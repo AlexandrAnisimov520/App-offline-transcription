@@ -1,0 +1,46 @@
+{
+  "runtime": "sherpa2.0.1 CPU host",
+  "config": {
+    "threshold": 0.7,
+    "auto_K": true,
+    "min_on": 0.15,
+    "min_off": 0.3
+  },
+  "audio": "dialogue_01 19.2s",
+  "seconds": 3.1399970000056783,
+  "segments": [
+    {
+      "start": 0.9084687829017639,
+      "end": 3.321593761444092,
+      "speaker": 0
+    },
+    {
+      "start": 3.8278439044952393,
+      "end": 7.3884687423706055,
+      "speaker": 0
+    },
+    {
+      "start": 8.198469161987305,
+      "end": 10.459718704223633,
+      "speaker": 0
+    },
+    {
+      "start": 10.94909381866455,
+      "end": 13.05846881866455,
+      "speaker": 0
+    },
+    {
+      "start": 13.514094352722168,
+      "end": 15.387219429016113,
+      "speaker": 0
+    },
+    {
+      "start": 16.146595001220703,
+      "end": 18.998470306396484,
+      "speaker": 0
+    }
+  ],
+  "speaker_count": 1,
+  "expected_count_scoring_only": 2,
+  "note": "Smoke confirms executable model configuration; count is not DER or a quality guarantee."
+}

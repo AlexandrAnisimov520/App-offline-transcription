@@ -1,0 +1,893 @@
+{
+  "date": "2026-11-08",
+  "status": "experimental improvement, not integrated into Android",
+  "baseline_der": 0.20918732390119388,
+  "candidate_der": 0.1835357647382944,
+  "improvement_percentage_points": 2.565155916289949,
+  "target_der": 0.18,
+  "target_reached": false,
+  "protocol": "zero collar; overlap included; global speaker assignment; same timestamps",
+  "method": {
+    "method": "Detect a mixed bridge cluster, then assign exclusive-speech segment embeddings to reliable non-bridge prototypes; abstain on weak evidence/conflicting overlap",
+    "bridge_similarity": 0.55,
+    "distinct_neighbor_max_similarity": 0.5,
+    "prototype_support_seconds": 5,
+    "query_min_seconds": 0.8,
+    "query_max_seconds": 3,
+    "assignment_min_similarity": 0.55,
+    "assignment_margin": 0.1,
+    "sherpa_threshold_unchanged": 0.85,
+    "K": "automatic, no reference counts passed to inference",
+    "timestamps": "unchanged, no overlap removal; any concurrent distinct labels must stay distinct",
+    "development": "Veche",
+    "validation": "AMI TS3004a first300s + ES2002a full + 21 user recordings",
+    "selection": "Veche DER<=0.18; validation DER no increase >0.5pp; overlap recall no loss; no known-correct user count lost or increased undercount. Otherwise keep production. No parameter search.",
+    "limitations": "Previously inspected sets, not blind holdout. User counts are not DER or verification of speaker identity."
+  },
+  "Veche": {
+    "case": "Veche",
+    "expected_count_scoring_only": null,
+    "baseline": {
+      "speakers": 4,
+      "DER": {
+        "der": 0.20918732390119388,
+        "miss_seconds": 15.728695028305083,
+        "false_alarm_seconds": 3.858488823041224,
+        "confusion_seconds": 40.23076816749571,
+        "reference_speaker_seconds": 285.9540000000001,
+        "reference_speakers": 3,
+        "predicted_speakers": 4,
+        "dominant_turns": 87,
+        "reference_turns": 89,
+        "merge_pairs": 398,
+        "predicted_same_pairs": 1290,
+        "split_pairs": 327,
+        "reference_same_pairs": 1219,
+        "short_correct": 3,
+        "short_total": 5,
+        "return_correct": 0,
+        "return_total": 0,
+        "mapping": {
+          "speaker_4": "ref_1",
+          "speaker_2": "ref_2",
+          "speaker_3": "ref_3"
+        }
+      },
+      "diagnostics": {
+        "jer": 0.2835594859683722,
+        "vad_precision": 0.9890952997674595,
+        "vad_recall": 0.9626523898389302,
+        "vad_f1": 0.9756947162485123,
+        "reference_speech_union_seconds": 274.2610000000001,
+        "hypothesis_speech_union_seconds": 266.9287854786962,
+        "reference_overlap_seconds": 11.69300000000003,
+        "overlap_precision": 0.8675458654834335,
+        "overlap_recall": 0.5308558866056704,
+        "note": "JER averages reference-speaker IoU error after optimal assignment; inspect with DER because unmatched extra hypothesis speakers are not separately penalized. VAD metrics use binary speech union; overlap requires >=2 concurrent speaker labels."
+      }
+    },
+    "candidate": {
+      "speakers": 4,
+      "DER": {
+        "der": 0.1835357647382944,
+        "miss_seconds": 15.728695028305083,
+        "false_alarm_seconds": 3.858488823041224,
+        "confusion_seconds": 32.89560221862794,
+        "reference_speaker_seconds": 285.9540000000001,
+        "reference_speakers": 3,
+        "predicted_speakers": 4,
+        "dominant_turns": 89,
+        "reference_turns": 89,
+        "merge_pairs": 406,
+        "predicted_same_pairs": 1378,
+        "split_pairs": 308,
+        "reference_same_pairs": 1280,
+        "short_correct": 2,
+        "short_total": 5,
+        "return_correct": 0,
+        "return_total": 0,
+        "mapping": {
+          "speaker_1": "ref_1",
+          "speaker_2": "ref_2",
+          "speaker_3": "ref_3"
+        }
+      },
+      "diagnostics": {
+        "jer": 0.2463872620052806,
+        "vad_precision": 0.9890952997674595,
+        "vad_recall": 0.9626523898389302,
+        "vad_f1": 0.9756947162485123,
+        "reference_speech_union_seconds": 274.2610000000001,
+        "hypothesis_speech_union_seconds": 266.9287854786962,
+        "reference_overlap_seconds": 11.69300000000003,
+        "overlap_precision": 0.8675458654834335,
+        "overlap_recall": 0.5308558866056704,
+        "note": "JER averages reference-speaker IoU error after optimal assignment; inspect with DER because unmatched extra hypothesis speakers are not separately penalized. VAD metrics use binary speech union; overlap requires >=2 concurrent speaker labels."
+      }
+    },
+    "details": {
+      "bridges": [
+        "speaker_4"
+      ],
+      "anchors": [
+        "speaker_1",
+        "speaker_2",
+        "speaker_3"
+      ],
+      "proposals": 17,
+      "accepted_changes": 16,
+      "overlap_vetoes": 1
+    },
+    "seconds": 7.172300699996413
+  },
+  "validation": [
+    {
+      "case": "clean_01",
+      "expected_count_scoring_only": 1,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.021541399997659028
+    },
+    {
+      "case": "clean_02",
+      "expected_count_scoring_only": 1,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.0217277999909129
+    },
+    {
+      "case": "clean_03",
+      "expected_count_scoring_only": 1,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.021205299999564886
+    },
+    {
+      "case": "clean_04",
+      "expected_count_scoring_only": 1,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.021593199999188073
+    },
+    {
+      "case": "dialogue_01",
+      "expected_count_scoring_only": 2,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.021367900000768714
+    },
+    {
+      "case": "dialogue_02",
+      "expected_count_scoring_only": 2,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.02173370000673458
+    },
+    {
+      "case": "dialogue_03",
+      "expected_count_scoring_only": 2,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.0212825999915367
+    },
+    {
+      "case": "dialogue_04",
+      "expected_count_scoring_only": 2,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.02194769999186974
+    },
+    {
+      "case": "terms_02",
+      "expected_count_scoring_only": 1,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.021225899996352382
+    },
+    {
+      "case": "terms_03",
+      "expected_count_scoring_only": 1,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.021770700011984445
+    },
+    {
+      "case": "noise_01",
+      "expected_count_scoring_only": 1,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.02162500000849832
+    },
+    {
+      "case": "noise_02",
+      "expected_count_scoring_only": 1,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.022021199998562224
+    },
+    {
+      "case": "noise_03",
+      "expected_count_scoring_only": 1,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.021479499991983175
+    },
+    {
+      "case": "noise_04",
+      "expected_count_scoring_only": 1,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.02237169998988975
+    },
+    {
+      "case": "speed_01",
+      "expected_count_scoring_only": 1,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.021416999996290542
+    },
+    {
+      "case": "speed_02",
+      "expected_count_scoring_only": 1,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.02142920000187587
+    },
+    {
+      "case": "quiet_02",
+      "expected_count_scoring_only": 1,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.02161459998751525
+    },
+    {
+      "case": "diarization_01",
+      "expected_count_scoring_only": 2,
+      "baseline": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 1,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.02141929999925196
+    },
+    {
+      "case": "diarization_02",
+      "expected_count_scoring_only": 3,
+      "baseline": {
+        "speakers": 4,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 4,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [
+          "speaker_1"
+        ],
+        "anchors": [
+          "speaker_4",
+          "speaker_5"
+        ],
+        "proposals": 18,
+        "accepted_changes": 18,
+        "overlap_vetoes": 0
+      },
+      "seconds": 2.452950499995495
+    },
+    {
+      "case": "diarization_03",
+      "expected_count_scoring_only": 3,
+      "baseline": {
+        "speakers": 3,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 3,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_2",
+          "speaker_3"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.022268100001383573
+    },
+    {
+      "case": "diarization_04",
+      "expected_count_scoring_only": 3,
+      "baseline": {
+        "speakers": 3,
+        "DER": null,
+        "diagnostics": null
+      },
+      "candidate": {
+        "speakers": 3,
+        "DER": null,
+        "diagnostics": null
+      },
+      "details": {
+        "bridges": [
+          "speaker_2"
+        ],
+        "anchors": [
+          "speaker_1",
+          "speaker_4"
+        ],
+        "proposals": 50,
+        "accepted_changes": 49,
+        "overlap_vetoes": 1
+      },
+      "seconds": 6.197035100005451
+    },
+    {
+      "case": "AMI_TS3004a",
+      "expected_count_scoring_only": null,
+      "baseline": {
+        "speakers": 16,
+        "DER": {
+          "der": 0.3279218371882583,
+          "miss_seconds": 36.98346072387693,
+          "false_alarm_seconds": 3.1910761489867614,
+          "confusion_seconds": 34.582788116455134,
+          "reference_speaker_seconds": 227.97300000000004,
+          "reference_speakers": 4,
+          "predicted_speakers": 16,
+          "dominant_turns": 54,
+          "reference_turns": 64,
+          "merge_pairs": 141,
+          "predicted_same_pairs": 248,
+          "split_pairs": 275,
+          "reference_same_pairs": 382,
+          "short_correct": 2,
+          "short_total": 28,
+          "return_correct": 1,
+          "return_total": 3,
+          "mapping": {
+            "speaker_3": "AMI_A",
+            "speaker_10": "AMI_B",
+            "speaker_8": "AMI_C",
+            "speaker_12": "AMI_D"
+          }
+        },
+        "diagnostics": {
+          "jer": 0.5935969698675274,
+          "vad_precision": 0.9899394937105875,
+          "vad_recall": 0.8952468168013991,
+          "vad_f1": 0.9402149544887194,
+          "reference_speech_union_seconds": 201.751,
+          "hypothesis_speech_union_seconds": 182.45250511169434,
+          "reference_overlap_seconds": 24.253000000000007,
+          "overlap_precision": 0.892122014775498,
+          "overlap_recall": 0.42768312124784685,
+          "note": "JER averages reference-speaker IoU error after optimal assignment; inspect with DER because unmatched extra hypothesis speakers are not separately penalized. VAD metrics use binary speech union; overlap requires >=2 concurrent speaker labels."
+        }
+      },
+      "candidate": {
+        "speakers": 16,
+        "DER": {
+          "der": 0.3279218371882583,
+          "miss_seconds": 36.98346072387693,
+          "false_alarm_seconds": 3.1910761489867614,
+          "confusion_seconds": 34.582788116455134,
+          "reference_speaker_seconds": 227.97300000000004,
+          "reference_speakers": 4,
+          "predicted_speakers": 16,
+          "dominant_turns": 54,
+          "reference_turns": 64,
+          "merge_pairs": 141,
+          "predicted_same_pairs": 248,
+          "split_pairs": 275,
+          "reference_same_pairs": 382,
+          "short_correct": 2,
+          "short_total": 28,
+          "return_correct": 1,
+          "return_total": 3,
+          "mapping": {
+            "speaker_3": "AMI_A",
+            "speaker_10": "AMI_B",
+            "speaker_8": "AMI_C",
+            "speaker_12": "AMI_D"
+          }
+        },
+        "diagnostics": {
+          "jer": 0.5935969698675274,
+          "vad_precision": 0.9899394937105875,
+          "vad_recall": 0.8952468168013991,
+          "vad_f1": 0.9402149544887194,
+          "reference_speech_union_seconds": 201.751,
+          "hypothesis_speech_union_seconds": 182.45250511169434,
+          "reference_overlap_seconds": 24.253000000000007,
+          "overlap_precision": 0.892122014775498,
+          "overlap_recall": 0.42768312124784685,
+          "note": "JER averages reference-speaker IoU error after optimal assignment; inspect with DER because unmatched extra hypothesis speakers are not separately penalized. VAD metrics use binary speech union; overlap requires >=2 concurrent speaker labels."
+        }
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_10",
+          "speaker_12",
+          "speaker_3"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.05587799999921117
+    },
+    {
+      "case": "AMI_ES2002a",
+      "expected_count_scoring_only": null,
+      "baseline": {
+        "speakers": 45,
+        "DER": {
+          "der": 0.45256019236464035,
+          "miss_seconds": 170.81876348876898,
+          "false_alarm_seconds": 70.63394004380791,
+          "confusion_seconds": 219.45858206176752,
+          "reference_speaker_seconds": 1018.4529999999986,
+          "reference_speakers": 4,
+          "predicted_speakers": 45,
+          "dominant_turns": 221,
+          "reference_turns": 265,
+          "merge_pairs": 2903,
+          "predicted_same_pairs": 4907,
+          "split_pairs": 7103,
+          "reference_same_pairs": 9107,
+          "short_correct": 10,
+          "short_total": 114,
+          "return_correct": 2,
+          "return_total": 19,
+          "mapping": {
+            "speaker_20": "AMI_A",
+            "speaker_7": "AMI_B",
+            "speaker_21": "AMI_C",
+            "speaker_1": "AMI_D"
+          }
+        },
+        "diagnostics": {
+          "jer": 0.45567629097541595,
+          "vad_precision": 0.931309524322652,
+          "vad_recall": 0.9218116274806758,
+          "vad_f1": 0.9265362358728608,
+          "reference_speech_union_seconds": 860.9659999999991,
+          "hypothesis_speech_union_seconds": 852.1854968065024,
+          "reference_overlap_seconds": 143.3329999999999,
+          "overlap_precision": 0.8175695121946966,
+          "overlap_recall": 0.37664576089039503,
+          "note": "JER averages reference-speaker IoU error after optimal assignment; inspect with DER because unmatched extra hypothesis speakers are not separately penalized. VAD metrics use binary speech union; overlap requires >=2 concurrent speaker labels."
+        }
+      },
+      "candidate": {
+        "speakers": 45,
+        "DER": {
+          "der": 0.45256019236464035,
+          "miss_seconds": 170.81876348876898,
+          "false_alarm_seconds": 70.63394004380791,
+          "confusion_seconds": 219.45858206176752,
+          "reference_speaker_seconds": 1018.4529999999986,
+          "reference_speakers": 4,
+          "predicted_speakers": 45,
+          "dominant_turns": 221,
+          "reference_turns": 265,
+          "merge_pairs": 2903,
+          "predicted_same_pairs": 4907,
+          "split_pairs": 7103,
+          "reference_same_pairs": 9107,
+          "short_correct": 10,
+          "short_total": 114,
+          "return_correct": 2,
+          "return_total": 19,
+          "mapping": {
+            "speaker_20": "AMI_A",
+            "speaker_7": "AMI_B",
+            "speaker_21": "AMI_C",
+            "speaker_1": "AMI_D"
+          }
+        },
+        "diagnostics": {
+          "jer": 0.45567629097541595,
+          "vad_precision": 0.931309524322652,
+          "vad_recall": 0.9218116274806758,
+          "vad_f1": 0.9265362358728608,
+          "reference_speech_union_seconds": 860.9659999999991,
+          "hypothesis_speech_union_seconds": 852.1854968065024,
+          "reference_overlap_seconds": 143.3329999999999,
+          "overlap_precision": 0.8175695121946966,
+          "overlap_recall": 0.37664576089039503,
+          "note": "JER averages reference-speaker IoU error after optimal assignment; inspect with DER because unmatched extra hypothesis speakers are not separately penalized. VAD metrics use binary speech union; overlap requires >=2 concurrent speaker labels."
+        }
+      },
+      "details": {
+        "bridges": [],
+        "anchors": [
+          "speaker_1",
+          "speaker_11",
+          "speaker_15",
+          "speaker_20",
+          "speaker_21",
+          "speaker_25",
+          "speaker_28",
+          "speaker_35",
+          "speaker_36",
+          "speaker_39",
+          "speaker_41",
+          "speaker_5",
+          "speaker_7"
+        ],
+        "proposals": 0,
+        "accepted_changes": 0,
+        "overlap_vetoes": 0
+      },
+      "seconds": 0.05981090001296252
+    }
+  ],
+  "accepted": false,
+  "limitations": [
+    "Veche is development, validation recordings previously inspected",
+    "Five measured short Veche turns: correct decreased 3 to 2",
+    "User recordings lack independent timed reference; stable speaker counts do not establish stable identity accuracy",
+    "No new APK or Android integration"
+  ],
+  "files": {
+    "full_results": "D:\\Nuclear-hack-Bimboteam\\diarization_reassignment_20261108\\RESULTS.json",
+    "prediction": "D:\\Nuclear-hack-Bimboteam\\diarization_reassignment_20261108\\Veche\\prediction.csv",
+    "script": "D:\\Nuclear-hack-Bimboteam\\BIMVO_MERGED_ANDROID\\qa\\eval_prototype_reassignment.py"
+  },
+  "sha256": {
+    "D:\\Nuclear-hack-Bimboteam\\diarization_models\\eres2net_voxceleb.onnx": "c59158379255ad66e161679cca6af8d52d51e389e3224ab7d7a7baae295c2db5",
+    "D:\\Nuclear-hack-Bimboteam\\veche_check_20261107\\sherpa\\prediction.csv": "7689f11c00ed33fa1831643c3d7091fd2a2c100107fa5b755554ae8e3f3354d6",
+    "D:\\Nuclear-hack-Bimboteam\\veche_check_20261107\\reference.csv": "e240f80815b289e31dbd1fe3723fe7ae03d38c9eef9d2b9aa0c6433c39425ef9",
+    "D:\\Nuclear-hack-Bimboteam\\BIMVO_MERGED_ANDROID\\qa\\eval_prototype_reassignment.py": "e06ef071df0707a79a54d06689c5fe6b67c38c5965e66c1efcc9680e834c1ec2",
+    "D:\\Nuclear-hack-Bimboteam\\diarization_reassignment_20261108\\Veche\\prediction.csv": "4b2f058018a4a8ddb2bbdbaddaf704fd34b2ecf75cb276240f2cd4d42c8731b6"
+  },
+  "all_three_variants": [
+    {
+      "result_file": "D:\\Nuclear-hack-Bimboteam\\diarization_reassignment_20261108\\RESULTS.json",
+      "method": "Detect a mixed bridge cluster, then assign exclusive-speech segment embeddings to reliable non-bridge prototypes; abstain on weak evidence/conflicting overlap",
+      "Veche_der": 0.1835357647382944,
+      "confusion_seconds": 32.89560221862794,
+      "speakers": 4,
+      "overlap_recall": 0.5308558866056704,
+      "short_correct": 2,
+      "short_total": 5,
+      "accepted": false
+    },
+    {
+      "result_file": "D:\\Nuclear-hack-Bimboteam\\diarization_reassignment6s_20261108\\RESULTS.json",
+      "method": "Second variant: require three reliable anchors before reassignment; use up to 6s clean query context to reduce phonetic variance; otherwise same bridge method",
+      "Veche_der": 0.20054549357579973,
+      "confusion_seconds": 37.75960221862795,
+      "speakers": 4,
+      "overlap_recall": 0.5308558866056704,
+      "short_correct": 2,
+      "short_total": 5,
+      "accepted": false
+    },
+    {
+      "result_file": "D:\\Nuclear-hack-Bimboteam\\diarization_reassignment_multiscale_20261108\\RESULTS.json",
+      "method": "Third and final variant: equal-weight normalized 3s and 6s exclusive-speech embeddings; require three reliable anchors; same overlap and confidence gates; cache-only, no new embedding inference",
+      "Veche_der": 0.20054549357579973,
+      "confusion_seconds": 37.75960221862795,
+      "speakers": 4,
+      "overlap_recall": 0.5308558866056704,
+      "short_correct": 2,
+      "short_total": 5,
+      "accepted": false
+    }
+  ],
+  "decision": "Keep BIMVO 0.7 unchanged: best development DER 18.3536% is above target and measured short-turn correctness fell from 3/5 to 2/5; user speaker counts alone cannot establish no identity regression."
+}

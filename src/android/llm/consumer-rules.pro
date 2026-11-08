@@ -1,0 +1,2 @@
+-keep class com.bimvo.llm.LlamaSession { *; }
+-keep interface com.bimvo.llm.LlamaSession$Listener { *; }

@@ -1,0 +1,66 @@
+{
+  "runtime": "sherpa-onnx static ONNX Runtime 2.0.1 + Java ORT 1.24.3",
+  "diarization": {
+    "segmentation_sha256": "d582f4b4c6b48205de7e0643c57df0df5615a3c176189be3fc461e9d18827b5d",
+    "embedding": "CAM++ zh/en",
+    "embedding_sha256": "aa3cfc16963a10586a9393f5035d6d6b57e98d358b347f80c2a30bf4f00ceba2",
+    "threshold": 0.7,
+    "min_on": 0.15,
+    "min_off": 0.3,
+    "auto_K": true
+  },
+  "ASR": {
+    "RU": "GigaAM-v3 E2E CTC INT8",
+    "EN": "Parakeet600M v2 INT8, featureDim=80"
+  },
+  "assets": [
+    {
+      "name": "Qwen3-1.7B-Q4_K_M.gguf",
+      "bytes": 1282439264
+    },
+    {
+      "name": "silero_vad.onnx",
+      "bytes": 2327524
+    },
+    {
+      "name": "speaker_embedding_v2_basic.onnx",
+      "bytes": 71425388
+    },
+    {
+      "name": "v3_e2e_ctc.int8.onnx",
+      "bytes": 224893347
+    },
+    {
+      "name": "v3_e2e_ctc_vocab.txt",
+      "bytes": 2007
+    },
+    {
+      "name": "diarization/segmentation.onnx",
+      "bytes": 1540506
+    },
+    {
+      "name": "parakeet-600m/decoder.int8.onnx",
+      "bytes": 7257753
+    },
+    {
+      "name": "parakeet-600m/encoder.int8.onnx",
+      "bytes": 652282309
+    },
+    {
+      "name": "parakeet-600m/joiner.int8.onnx",
+      "bytes": 1739080
+    },
+    {
+      "name": "parakeet-600m/tokens.txt",
+      "bytes": 9384
+    },
+    {
+      "name": "whisper-lid/tiny-decoder.int8.onnx",
+      "bytes": 89855401
+    },
+    {
+      "name": "whisper-lid/tiny-encoder.int8.onnx",
+      "bytes": 12937772
+    }
+  ]
+}

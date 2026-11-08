@@ -40,3 +40,14 @@ artifacts/demo/*.mov
 artifacts/demo/*.mkv
 artifacts/demo/*.wav
 
+
+# Android generated files and offline bundles
+**/.gradle/
+**/.cxx/
+**/build/
+**/local.properties
+src/android/app/src/main/assets/models/
+src/android/app/libs/*.aar
+*.apk
+*.idsig
+__pycache__/

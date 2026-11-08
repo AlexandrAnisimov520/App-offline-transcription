@@ -1,0 +1,43 @@
+Picked up JAVA_TOOL_OPTIONS: -Djava.io.tmpdir=D:/Gradle/tmp -Djdk.net.unixdomain.tmpdir=D:/Gradle/tmp
+Starting a Gradle Daemon, 1 incompatible Daemon could not be reused, use --status for details
+> Task :app:ensureOfflineModels
+> Task :app:verifyDiarizationModels
+> Task :app:verifySpeakerModel
+> Task :app:preBuild
+> Task :app:preDebugBuild
+> Task :app:generateDebugBuildConfig
+> Task :app:javaPreCompileDebug
+> Task :llm:preBuild UP-TO-DATE
+> Task :llm:preDebugBuild UP-TO-DATE
+> Task :llm:writeDebugAarMetadata
+> Task :app:checkDebugAarMetadata
+> Task :app:generateDebugResValues
+> Task :llm:generateDebugResValues
+> Task :llm:generateDebugResources
+> Task :llm:packageDebugResources
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:mergeDebugResources
+> Task :app:packageDebugResources
+> Task :app:parseDebugLocalResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :llm:extractDeepLinksDebug
+> Task :llm:processDebugManifest
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:processDebugManifestForPackage
+> Task :llm:compileDebugLibraryResources
+> Task :llm:parseDebugLocalResources
+> Task :llm:generateDebugRFile
+> Task :app:processDebugResources
+> Task :llm:javaPreCompileDebug
+> Task :llm:compileDebugJavaWithJavac
+> Task :llm:bundleLibCompileToJarDebug
+
+> Task :app:compileDebugJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+BUILD SUCCESSFUL in 24s
+31 actionable tasks: 31 executed

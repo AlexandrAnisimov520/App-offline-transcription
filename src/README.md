@@ -1,9 +1,3 @@
-#DELETEME: Создайте субдиректорию с платформой(-ами)Ж
-- web
-- mobile (android/ios/multi)
-- linux
-- windows
-- macos
-- *custom*
+# Исходный код
 
-## Инструкция по запуску и сборке проекта
+Android-приложение: [android](android). Открывайте папку android целиком, а не только app.
