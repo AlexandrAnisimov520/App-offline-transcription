@@ -22,8 +22,8 @@ android {
         applicationId 'com.bimvo.app'
         minSdk 26
         targetSdk 34
-        versionCode 5
-        versionName '0.5-speakers'
+        versionCode 8
+        versionName '0.8-ui'
         buildConfigField 'boolean', 'BUNDLED_QWEN', bundleQwen.toString()
     }
 

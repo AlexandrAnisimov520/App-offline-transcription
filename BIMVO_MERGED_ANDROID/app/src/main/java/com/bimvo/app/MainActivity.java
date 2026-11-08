@@ -94,12 +94,15 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
     private static final int CREATE_SUMMARY_EXPORT = 105;
     private String pendingSummaryText = "", pendingSummaryName = "";
     private TextView recordingStatus;
-    private ProgressBar microphoneLevel;
+    private RecordingWaveView microphoneWave;
+    private boolean showDemoRecords;
+    private String pendingOriginalRenameId="", pendingAudioExportId="";
+    private static final int PICK_ORIGINAL_RENAME=106, CREATE_AUDIO_EXPORT=107;
     private final Runnable recordingClock = new Runnable() {
         @Override public void run() {
             if (model == null || !model.voiceRecorder.isRecording()) return;
             updateRecordingStatus();
-            handler.postDelayed(this, 250);
+            handler.postDelayed(this, 125);
         }
     };
 
@@ -155,6 +158,9 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         super.onSaveInstanceState(out);
         out.putString("page", page.name());
         out.putString("recordId", currentRecordId);
+        out.putBoolean("showDemoRecords", showDemoRecords);
+        out.putString("originalRenameId", pendingOriginalRenameId);
+        out.putString("audioExportId", pendingAudioExportId);
         out.putString("query", recordQuery);
         out.putString("loginName", loginName);
         // Demo credentials are never persisted or placed in the saved state.
@@ -178,6 +184,9 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         try { page = Page.valueOf(data.getString("page", "LOGIN")); }
         catch (IllegalArgumentException ignored) { page = Page.LOGIN; }
         currentRecordId = data.getString("recordId", "demo-team");
+        showDemoRecords=data.getBoolean("showDemoRecords",false);
+        pendingOriginalRenameId=data.getString("originalRenameId", "");
+        pendingAudioExportId=data.getString("audioExportId", "");
         recordQuery = data.getString("query", "");
         loginName = data.getString("loginName", "");
         exportFormat = data.getString("format", "JSON");
@@ -246,6 +255,17 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
 
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
+        if (request == PICK_ORIGINAL_RENAME || request == CREATE_AUDIO_EXPORT) {
+            String id=request==PICK_ORIGINAL_RENAME ? pendingOriginalRenameId : pendingAudioExportId;
+            if(request==PICK_ORIGINAL_RENAME)pendingOriginalRenameId="";else pendingAudioExportId="";
+            if(result==RESULT_OK && data!=null && data.getData()!=null && !id.isEmpty()) {
+                boolean started=request==PICK_ORIGINAL_RENAME ? model.renameOriginalDocument(id,data.getData())
+                        : model.saveAudioFile(id,data.getData());
+                if(!started)toast(R.string.operation_busy);
+                else if(request==PICK_ORIGINAL_RENAME)toastText("Проверяем и переименовываем исходный файл…");
+            }
+            return;
+        }
         if (request == CREATE_SUMMARY_EXPORT) {
             String content = pendingSummaryText;
             pendingSummaryText = "";
@@ -324,13 +344,18 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         page = Page.HOME;
         render();
     }
-    private void enterDemo() {
+    private void enterApp() {
+        showDemoRecords=false;
         enterHome();
         if (!preferences.getBoolean("onboardingDone", false)) {
             onboardingPending = true;
             onboardingChoice = -1;
             showOnboarding();
         }
+    }
+    private void enterDemo() {
+        hideKeyboard();stopPlayback();navigation.clear();
+        showDemoRecords=true;recordQuery="";page=Page.RECORDS;render();
     }
     private void forward(Page next) {
         if (page == next) return;
@@ -343,6 +368,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         if (next == Page.PROCESSING && current() != null && current().demo) animateProcessing();
     }
     private void bottomTab(Page next) {
+        if(next==Page.RECORDS)showDemoRecords=false;
         hideKeyboard();
         stopPlayback();
         navigation.clear();
@@ -457,7 +483,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         root.setOnClickListener(null);
         root.setClickable(false);
         root.removeAllViews();
-        recordingStatus = null; microphoneLevel = null;
+        recordingStatus = null; microphoneWave = null;
         recordsContainer = null;
         intervalContainer = null;
         importProgress = null;
@@ -504,6 +530,16 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         scroll.setFillViewport(true);
         scroll.setVerticalScrollBarEnabled(false);
         scroll.setClipToPadding(false);
+        if (model.voiceRecorder.isRecording() && page != Page.HOME) {
+            LinearLayout strip=horizontal(); strip.setPadding(dp(16),dp(4),dp(12),dp(4));
+            strip.setBackground(shape(BimvoStyle.CARD,BimvoStyle.TEAL,0));
+            microphoneWave=new RecordingWaveView(this);strip.addView(microphoneWave,lp(54,54));
+            recordingStatus=text("",12,BimvoStyle.TEAL,true);
+            strip.addView(recordingStatus,new LinearLayout.LayoutParams(0,-1,1f));
+            TextView stop=text("Стоп",14,BimvoStyle.WHITE,true);stop.setGravity(Gravity.CENTER);
+            stop.setOnClickListener(v -> toggleVoiceRecording());strip.addView(stop,lp(62,48));
+            scaffold.addView(strip,lp(-1,62));updateRecordingStatus();
+        }
         scaffold.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1f));
         LinearLayout body = vertical();
         body.setPadding(dp(26), dp(12), dp(26), dp(24));
@@ -515,7 +551,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
     private void updateRecordingStatus() {
         if (recordingStatus != null)
             recordingStatus.setText("● Идёт запись · " + TranscriptText.clock(model.voiceRecorder.elapsedMs()));
-        if (microphoneLevel != null) microphoneLevel.setProgress(model.voiceRecorder.level());
+        if (microphoneWave != null) microphoneWave.setLevel(model.voiceRecorder.level());
     }
 
     private void logoHeader(LinearLayout body, boolean hasBack) {
@@ -657,7 +693,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         arrowLp.leftMargin = dp(14);
         button.addView(arrow, arrowLp);
         button.setMinimumHeight(dp(59));
-        button.setContentDescription("Войти в демо-приложение");
+        button.setContentDescription("Открыть BIMVO");
         return button;
     }
 
@@ -732,7 +768,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
             @Override public void afterTextChanged(Editable s) { }
         });
         password.setOnEditorActionListener((v,id,event) -> {
-            if (id == EditorInfo.IME_ACTION_DONE) { enterDemo(); return true; }
+            if (id == EditorInfo.IME_ACTION_DONE) { enterApp(); return true; }
             return false;
         });
         passwordRow.addView(password, new LinearLayout.LayoutParams(0, dp(58), 1f));
@@ -750,7 +786,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         withMargin(inner, passwordRow, -1, 58, 0, 0);
 
         spacer(inner, 28);
-        withMargin(inner, loginPrimary(this::enterDemo), -1, 60, 0, 0);
+        withMargin(inner, loginPrimary(this::enterApp), -1, 60, 0, 0);
         TextView demo = text("Демо-доступ", 16, BimvoStyle.MUTED, false);
         demo.setGravity(Gravity.CENTER);
         demo.setContentDescription("Демо-доступ");
@@ -785,12 +821,8 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
             recording.setBackground(shape(BimvoStyle.CARD, BimvoStyle.TEAL, 12));
             recordingStatus = text("", 17, BimvoStyle.TEAL, true);
             recording.addView(recordingStatus, lp(-1, 32));
-            withMargin(recording, text("Микрофон включён", 12, BimvoStyle.MUTED, false), -1, -2, 2, 12);
-            microphoneLevel = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-            microphoneLevel.setMax(100);
-            microphoneLevel.setProgressTintList(ColorStateList.valueOf(BimvoStyle.TEAL));
-            microphoneLevel.setContentDescription("Уровень микрофона");
-            recording.addView(microphoneLevel, lp(-1, 8));
+            microphoneWave = new RecordingWaveView(this);
+            recording.addView(microphoneWave, lp(-1, 138));
             withMargin(recording, primaryButton("Остановить запись", this::toggleVoiceRecording), -1, 52, 18, 0);
             withMargin(body, recording, -1, -2, 0, 0);
             updateRecordingStatus();
@@ -960,7 +992,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
                 addRecordingCard(body,imported);
                 addPrimary(body,s(R.string.import_open_library),() -> bottomTab(Page.RECORDS),14);
             }
-            note(body,s(R.string.import_local_hint),false);
+
         }
         TextView privacy = caption(s(R.string.import_security));
         privacy.setGravity(Gravity.CENTER);
@@ -1003,7 +1035,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
             model.voiceRecorder.start(this);
             render();
             handler.removeCallbacks(recordingClock);
-            handler.postDelayed(recordingClock, 1000);
+            handler.postDelayed(recordingClock, 125);
         } catch (java.io.IOException | RuntimeException error) {
             toast(R.string.voice_record_start_failed);
         }
@@ -1063,6 +1095,8 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         addPrimary(body,s(R.string.import_open_library),() -> bottomTab(Page.RECORDS),26);
         if (!r.demo) {
             withMargin(body,secondaryButton(s(R.string.rename_action),() -> renameRecording(r)),-1,48,8,0);
+            withMargin(body,secondaryButton("Сохранить аудиофайл",() -> exportAudioFile(r)),-1,48,8,0);
+            withMargin(body,secondaryButton("Имя исходного файла",() -> renameOriginalFile(r)),-1,48,8,0);
             withMargin(body,secondaryButton(s(R.string.delete_action),() -> confirmDelete(r)),-1,48,0,0);
         }
     }
@@ -1126,6 +1160,27 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         TextView text = text(value,14,BimvoStyle.WHITE,false);
         text.setTextIsSelectable(true);
         withMargin(parent,text,-1,-2,0,15);
+    }
+
+    private void exportAudioFile(Recording r) {
+        pendingAudioExportId=r.id;
+        Intent save=new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                .setType(r.mimeType.startsWith("audio/") ? r.mimeType : "audio/*")
+                .putExtra(Intent.EXTRA_TITLE,r.originalName).putExtra(Intent.EXTRA_LOCAL_ONLY,true);
+        try { startActivityForResult(save,CREATE_AUDIO_EXPORT); }
+        catch(ActivityNotFoundException e){pendingAudioExportId="";toast(R.string.picker_missing);}
+    }
+    private void renameOriginalFile(Recording r) {
+        new AlertDialog.Builder(this).setTitle("Имя исходного файла")
+                .setMessage("Выберите исходное аудио. Его имя будет изменено на «"+r.originalName+"».")
+                .setPositiveButton("Выбрать файл",(dialog,which)->{
+                    pendingOriginalRenameId=r.id;
+                    Intent pick=new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                            .setType("audio/*").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                            .putExtra(Intent.EXTRA_LOCAL_ONLY,true);
+                    try {startActivityForResult(pick,PICK_ORIGINAL_RENAME);}
+                    catch(ActivityNotFoundException e){pendingOriginalRenameId="";toast(R.string.picker_missing);}
+                }).setNegativeButton(R.string.cancel,null).show();
     }
 
     private void renameRecording(Recording r) {
@@ -1250,7 +1305,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
             case "vad" -> "Определение пауз · Silero";
             case "speakers", "clustering" -> "Определение говорящих";
             case "language" -> "Определение языка";
-            case "asr" -> "Распознавание речи · GigaAM";
+            case "asr" -> "Распознавание речи · RU/EN";
             case "done" -> "Готово";
             default -> "Ожидание или восстановление";
         };
@@ -1363,7 +1418,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         withMargin(body,header,-1,44,12,12);
         for (Utterance turn : r.transcript) addSpeakerCard(body,turn);
         addPrimary(body,s(R.string.transcript_export),() -> forward(Page.EXPORT),15);
-        note(body,s(R.string.demo_player_hint),false);
+
     }
 
     private void startPlayback() {
@@ -1593,7 +1648,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
             if (model.busy()) { toast(R.string.operation_busy); return; }
             selectTextTab();
         },5);
-        note(body,s(R.string.map_hint),false);
+
         if (current().demo) note(body,s(R.string.demo_notice),true);
     }
 
@@ -1706,7 +1761,8 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
     }
 
     private List<Recording> orderedRecordings() {
-        List<Recording> order = new ArrayList<>(model.recordings());
+        List<Recording> order = new ArrayList<>();
+        for(Recording r:model.recordings())if(r.demo==showDemoRecords)order.add(r);
         Collator russian = Collator.getInstance(new Locale("ru","RU"));
         order.sort((a,b) -> {
             int result;
@@ -1751,7 +1807,8 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         LinearLayout body=content(true);
         logoHeader(body,false);
         spacer(body,30);
-        withMargin(body,headline(s(R.string.records_title)),-1,-2,0,9);
+        withMargin(body,headline(showDemoRecords ? "Демопримеры" : s(R.string.records_title)),-1,-2,0,9);
+        if(showDemoRecords)withMargin(body,secondaryButton("Мои записи",() -> {showDemoRecords=false;recordQuery="";render();}),-1,48,0,10);
         EditText search=dialogInput(recordQuery,1);
         search.setTextSize(TypedValue.COMPLEX_UNIT_SP,13);
         search.setHint(R.string.search_hint);
@@ -1785,7 +1842,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
             @Override public void afterTextChanged(Editable value) { }
         });
         addPrimary(body,s(R.string.new_audio_title),() -> forward(Page.UPLOAD),14);
-        note(body,s(R.string.demo_explanation),false);
+
     }
 
     private void populateRecords() {
@@ -1796,8 +1853,8 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
             addRecordingCard(recordsContainer,r); count++;
         }
         if (count==0) {
-            withMargin(recordsContainer,section(s(R.string.search_empty)),-1,-2,20,8);
-            note(recordsContainer,s(R.string.search_empty_detail),true);
+            withMargin(recordsContainer,section(recordQuery.trim().isEmpty()
+                    ? (showDemoRecords ? "Нет демопримеров" : "Пока нет записей") : s(R.string.search_empty)),-1,-2,20,8);
             spacer(recordsContainer,24);
         }
     }
@@ -1858,7 +1915,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         if (r.transcript.isEmpty()) note(body,s(R.string.export_no_transcript),true);
         else {
             if (r.demo) note(body,s(R.string.export_demo_notice),true);
-            note(body,s(R.string.export_hint),false);
+
         }
     }
 
@@ -1936,9 +1993,6 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
             withMargin(body,item,-1,-2,0,10);
         }
         if (!selecting) {
-            TextView capability=text(s(R.string.capability_notice),11,BimvoStyle.MUTED,false);
-            capability.setLineSpacing(dp(4),1f);
-            withMargin(body,capability,-1,-2,7,4);
             withMargin(panel,primaryButton(s(R.string.onboarding_start),this::finishOnboarding),-1,50,16,0);
         }
         onboardingDialog = new AlertDialog.Builder(this).create();
@@ -1964,7 +2018,7 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         LinearLayout body = content(true);
         logoHeader(body,false);
         spacer(body,35);
-        withMargin(body,headline("Профиль"),-1,-2,0,24);
+        withMargin(body,headline("Профиль устройства"),-1,-2,0,24);
         LinearLayout user = horizontal();
         user.setPadding(dp(14),dp(12),dp(13),dp(12));
         user.setBackground(shape(BimvoStyle.CARD,BimvoStyle.BORDER,7));
@@ -1977,11 +2031,14 @@ public class MainActivity extends Activity implements BimvoApplication.Listener 
         LinearLayout.LayoutParams nameLp = new LinearLayout.LayoutParams(0,-2,1f);
         nameLp.leftMargin=dp(12);
         user.addView(name,nameLp);
-        name.addView(text("Демо-профиль",16,BimvoStyle.WHITE,true));
-        withMargin(name,text("На этом устройстве · без аккаунта",11,BimvoStyle.MUTED,false),-1,-2,5,0);
+        name.addView(text("На этом устройстве",16,BimvoStyle.WHITE,true));
+        withMargin(name,text("Без аккаунта · офлайн",11,BimvoStyle.MUTED,false),-1,-2,5,0);
         withMargin(body,user,-1,73,0,18);
         addLibrarySummary(body);
-        spacer(body,24);
+        spacer(body,16);
+        withMargin(body,secondaryButton("Посмотреть демопримеры",() -> {
+            showDemoRecords=true;recordQuery="";forward(Page.RECORDS);
+        }),-1,48,0,16);
         withMargin(body,section("Параметры"),-1,-2,0,16);
 
         withMargin(body,settingRow("О приложении","Версия " + BuildConfig.VERSION_NAME,() -> {

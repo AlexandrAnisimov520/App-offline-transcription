@@ -323,6 +323,36 @@ public final class BimvoApplication extends Application {
         return true;
     }
 
+    boolean renameOriginalDocument(String id, Uri uri) {
+        Recording recording=find(id);
+        if(recording==null || recording.demo || !begin(Operation.WRITE))return false;
+        io.execute(()->{
+            int message=R.string.source_rename_done;
+            try { OriginalDocumentRename.rename(this,uri,recording); }
+            catch(SourceFileIdentity.Mismatch e){message=R.string.source_rename_wrong_file;}
+            catch(OriginalDocumentRename.Unsupported | SecurityException e){message=R.string.source_rename_not_allowed;}
+            catch(Exception e){android.util.Log.e("BIMVO","Source rename failed",e);message=R.string.source_rename_failed;}
+            finishOperation(message,"");
+        });
+        return true;
+    }
+    boolean saveAudioFile(String id, Uri destination) {
+        Recording recording=find(id);
+        if(recording==null || recording.demo || !begin(Operation.EXPORT))return false;
+        io.execute(()->{
+            int message=R.string.audio_export_done;
+            try (FileInputStream input=new FileInputStream(store.audioFile(recording));
+                 OutputStream output=getContentResolver().openOutputStream(destination,"wt")) {
+                if(output==null)throw new IOException("Audio destination unavailable");
+                byte[] buffer=new byte[65536];int n;
+                while((n=input.read(buffer))!=-1)output.write(buffer,0,n);
+                output.flush();
+            }catch(Exception e){android.util.Log.e("BIMVO","Audio export failed",e);message=R.string.export_failed;}
+            finishOperation(message,"");
+        });
+        return true;
+    }
+
     boolean rename(String id, String name) { return write(() -> store.rename(id, name), R.string.changes_saved); }
     boolean delete(Recording r) {
         if (processing.isRunning(r.id)) return false;
